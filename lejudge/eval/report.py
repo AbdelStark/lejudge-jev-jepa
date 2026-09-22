@@ -89,8 +89,9 @@ def fig_success_vs_violation(df: pd.DataFrame, out: Path) -> None:
     for ax, cset in zip(axes[0], sets):
         g = t[t.constraint_set == cset]
         for _, r in g.iterrows():
-            c = PALETTE.get(r.condition, "k")
-            ax.errorbar(r.violation, r.success, xerr=[[r.violation - r.violation_lo], [r.violation_hi - r.violation]], yerr=[[r.success - r.success_lo], [r.success_hi - r.success]], fmt="o", color=c, capsize=2, label=LABELS.get(r.condition, r.condition))
+            c = PALETTE.get(str(r.condition).split(":")[0], "k")
+            marker = {"jev:tau0.75": "s", "jev:tau1.0": "^"}.get(str(r.condition), "o")
+            ax.errorbar(r.violation, r.success, xerr=[[r.violation - r.violation_lo], [r.violation_hi - r.violation]], yerr=[[r.success - r.success_lo], [r.success_hi - r.success]], fmt=marker, color=c, capsize=2, label=LABELS.get(r.condition, r.condition))
         ax.set_title(f"set: {cset} (n={int(g.n.max())}/cond)")
         ax.set_xlabel("episode violation rate (oracle on executed states)")
         ax.set_ylabel("success rate")
@@ -295,6 +296,24 @@ def build_report(results: Path | str = RESULTS, out: Path | str = "paper/figures
         if afd is not None and not afd.empty:
             fig_pareto(pd.concat([fdf, afd]), out / "filtered")
             summary["figures"].append("filtered/fig3_pareto_lambda")
+    gdf = pd.read_parquet(results / "planning_gate.parquet") if (results / "planning_gate.parquet").exists() else None
+    if gdf is not None and not gdf.empty and fdf is not None:
+        sets = sorted(gdf.constraint_set.unique())
+        base = fdf[fdf.constraint_set.isin(sets) & fdf.condition.isin(["lewm", "oracle", "keyword", "jev"])].copy()
+        base["condition"] = base.condition.where(base.condition != "jev", "jev:tau0.5")
+        g = gdf.copy()
+        g["condition"] = "jev:tau" + g.tau.astype(str)
+        both = pd.concat([base, g], ignore_index=True)
+        t5 = planning_table(both)
+        t5.to_csv(out / "table5_gate.csv", index=False)
+        (out / "table5_gate.md").write_text(_md_table(t5))
+        summary["tables"]["gate"] = t5.to_dict(orient="records")
+        tests5 = pd.concat([paired_tests(both, ref="lewm", metric="violation"), paired_tests(both, ref="jev:tau0.5", metric="violation"), paired_tests(both, ref="lewm", metric="success")])
+        tests5.to_csv(out / "table5b_paired_tests_gate.csv", index=False)
+        (out / "table5b_paired_tests_gate.md").write_text(_md_table(tests5, "{:.4f}"))
+        summary["tables"]["paired_tests_gate"] = tests5.to_dict(orient="records")
+        fig_success_vs_violation(both, out / "gate")
+        summary["figures"].append("gate/fig2_success_vs_violation")
     if adf is not None and not adf.empty:
         t3 = planning_table(adf.assign(condition=adf.condition + ":" + adf.tag.astype(str)))
         t3.to_csv(out / "table3_ablations.csv", index=False)

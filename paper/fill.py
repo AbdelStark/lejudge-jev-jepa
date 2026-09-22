@@ -93,6 +93,17 @@ def main() -> None:
                 vals[f"{cond}_violation_filt_{key}"] = pct(gg.violation.mean())
                 vals[f"{cond}_success_filt_{key}"] = pct(gg.success.mean())
         tex_table(FIG / "table4_planning_filtered.csv", FIG / "table4_planning_filtered.tex", ["condition", "constraint_set", "n", "success", "success_lo", "success_hi", "violation", "violation_lo", "violation_hi", "plan_p50_s", "judge_calls_per_episode"])
+    # Study 3 (gate)
+    if (RES / "planning_gate.parquet").exists():
+        g = pd.read_parquet(RES / "planning_gate.parquet")
+        for tau, gt in g.groupby("tau"):
+            key = str(tau).replace(".", "")
+            vals[f"jev_violation_gate{key}_all"] = pct(gt.violation.mean())
+            vals[f"jev_success_gate{key}_all"] = pct(gt.success.mean())
+            vals[f"jev_held_gate{key}_all"] = pct(gt.abstention_rate.mean())
+            for cset, gg in gt.groupby("constraint_set"):
+                vals[f"jev_violation_gate{key}_{str(cset).replace('+', '_')}"] = pct(gg.violation.mean())
+        tex_table(FIG / "table5_gate.csv", FIG / "table5_gate.tex", ["condition", "constraint_set", "n", "success", "success_lo", "success_hi", "violation", "violation_lo", "violation_hi", "abstention_rate"])
     # judge-only
     if (RES / "judge_only.parquet").exists():
         j = pd.read_parquet(RES / "judge_only.parquet")

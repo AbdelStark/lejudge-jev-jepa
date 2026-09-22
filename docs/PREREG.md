@@ -41,3 +41,11 @@ LeWM checkpoint `quentinll/lewm-pusht` revision `22b330c28c27ead4bfd1888615af134
 **Design.** Same conditions {LeWM, oracle-on-probes, keyword, Jev}, sets {spatial, spatial+temporal, implicit}, seeds {0, 1, 2}, 30 episodes per cell, λ = 1, `every_k` schedule, population-wide JevCost, everything else as in Study 1. Exploratory: λ ∈ {0.25, 0.5, 2, 4} for Jev on the filtered spatial set, seed 0, 30 episodes.
 
 **Hypotheses.** H1′: oracle-on-probes reduces the episode violation rate relative to LeWM by at least 20 points on filtered starts. H2′: Jev is within 10 points of oracle-on-probes. H3′: success drops by at most 15 points for Jev relative to LeWM. Analysis identical to Study 1 (bootstrap CIs, paired Wilcoxon vs LeWM, Holm across sets, risk differences).
+
+## Study 3 — confidence gate (pre-registered 2026-09-22, before any Study 3 run)
+
+**Motivation.** In Study 2 Jev's pre-registered gate (τ = 0.5 on the fraction of per-step probabilities inside [0.3, 0.7]) zeroed the penalty for 21–62 % of candidates, while the oracle and keyword judges, which never abstain, reduced violations by 8–14 points on `spatial+temporal` and `implicit`.
+
+**Design.** Jev only, relevance-filtered starts exactly as in Study 2 (same windows, seeds {0, 1, 2}, 30 episodes per cell), sets {spatial+temporal, implicit}, λ = 1, `every_k`, and τ ∈ {0.75, 1.0} (τ = 1.0 disables the gate). The Study 2 τ = 0.5 cells are the comparison; LeWM and oracle-on-probes cells from Study 2 are reused unchanged (identical episodes and seeds).
+
+**Hypotheses.** H1″: with the gate disabled (τ = 1.0) Jev's episode violation rate is within 5 points of oracle-on-probes on both sets. H2″: success does not drop by more than 10 points relative to τ = 0.5. Analysis as before: bootstrap CIs, paired Wilcoxon vs LeWM and vs Jev τ = 0.5, Holm across the two sets.
