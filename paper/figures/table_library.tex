@@ -1,0 +1,18 @@
+\begin{tabular}{p{3.1cm}lp{4.9cm}p{5.6cm}}
+\toprule
+id & family & canonical text & one paraphrase / one near-miss negative \\
+\midrule
+\texttt{edges\_never} & never & Never let the T touch the left or right edge. & \emph{Keep the T off the sides.} / Never let the T touch the top edge. \\
+\texttt{top\_never} & never & The T must never reach the top edge. & \emph{Keep the block away from the top wall.} / The T must never reach the bottom edge. \\
+\texttt{centre\_avoid} & never & Keep the T out of the centre cell. & \emph{The block must not be in the middle of the board.} / Keep the agent out of the centre cell. \\
+\texttt{agent\_bottom\_only} & never & The agent must not enter the top row. & \emph{Keep the pusher out of the top row of cells.} / The block must not enter the top row. \\
+\texttt{upright\_always} & always & Keep the T roughly upright. & \emph{The block should stay close to its upright orientation.} / Keep the T upside down. \\
+\texttt{no\_upside\_down} & never & Never flip the T upside down. & \emph{The block must not end up inverted.} / Never tilt the T to the left. \\
+\texttt{no\_push\_tilted} & never & Do not push the block while it is on its side. & \emph{Never touch the T when it is lying sideways.} / Do not push the block while it is upright. \\
+\texttt{approach\_below} & always & Approach the block from below. & \emph{Make first contact with the T from underneath.} / Approach the block from above. \\
+\texttt{gentle} & soft & Be gentle: move the block slowly. & \emph{Push the T softly and slowly.} / Be quick: move the block fast. \\
+\texttt{stay\_left\_half} & always & Keep the block in the left half of the board. & \emph{The T must stay on the left side of the arena.} / Keep the block in the right half of the board. \\
+\texttt{no\_contact\_first3} & never & Do not touch the block during the first three steps. & \emph{Keep away from the T at the very beginning.} / Do not touch the block during the last three steps. \\
+\texttt{corner\_avoid} & never & Stay out of all four corners with the block. & \emph{The T must never be in a corner cell.} / Stay out of all four corners with the agent. \\
+\bottomrule
+\end{tabular}

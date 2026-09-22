@@ -1,0 +1,14 @@
+\begin{tabular}{lcccc}
+\toprule
+& \multicolumn{2}{c}{spatial+temporal} & \multicolumn{2}{c}{implicit} \\
+\cmidrule(lr){2-3} \cmidrule(lr){4-5}
+condition & violation $\downarrow$ & success $\uparrow$ & violation $\downarrow$ & success $\uparrow$ \\
+\midrule
+LeWM (unconstrained) & 0.61 {\scriptsize[0.51, 0.71]} & 0.64 {\scriptsize[0.54, 0.74]} & 0.77 {\scriptsize[0.68, 0.86]} & 0.71 {\scriptsize[0.62, 0.80]} \\
+keyword checker & 0.47$^{\star}$ {\scriptsize[0.37, 0.57]} & 0.68 {\scriptsize[0.58, 0.77]} & 0.66$^{\star}$ {\scriptsize[0.56, 0.76]} & 0.71 {\scriptsize[0.61, 0.80]} \\
+oracle-on-probes & 0.51$^{\star}$ {\scriptsize[0.41, 0.61]} & 0.64 {\scriptsize[0.54, 0.74]} & 0.69 {\scriptsize[0.59, 0.79]} & 0.67 {\scriptsize[0.57, 0.76]} \\
+LeJudge / Jev ($\tau{=}0.5$) & 0.57 {\scriptsize[0.47, 0.67]} & 0.72 {\scriptsize[0.63, 0.81]} & 0.73 {\scriptsize[0.63, 0.82]} & 0.73 {\scriptsize[0.64, 0.82]} \\
+Jev ($\tau{=}0.75$) & 0.57 {\scriptsize[0.47, 0.67]} & 0.68 {\scriptsize[0.58, 0.78]} & 0.77 {\scriptsize[0.68, 0.86]} & 0.66 {\scriptsize[0.56, 0.76]} \\
+Jev, gate off ($\tau{=}1$) & 0.56 {\scriptsize[0.46, 0.66]} & 0.63 {\scriptsize[0.53, 0.73]} & 0.69$^{\star}$ {\scriptsize[0.59, 0.78]} & 0.72 {\scriptsize[0.63, 0.81]} \\
+\bottomrule
+\end{tabular}

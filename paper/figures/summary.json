@@ -2427,5 +2427,15 @@
       "horizon": 5,
       "n_starts": 400
     }
-  }
+  },
+  "paper_figures": [
+    "fig_forest_study1",
+    "fig_forest_study2",
+    "fig_lambda",
+    "fig_paraphrase_heatmap",
+    "fig_reliability",
+    "fig_latency_accuracy",
+    "fig_decomposition",
+    "fig_penalised_fraction"
+  ]
 }

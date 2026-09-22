@@ -1,0 +1,10 @@
+\small Bank \texttt{lejudge.pusht@0.1.0}. Rendered for candidate \texttt{k1}, constraint \texttt{c1}, step $t=2$.\par\medskip
+\footnotesize\begin{tabular}{p{1.4cm}p{4.8cm}p{8.6cm}}
+\toprule
+family & instructions & criteria \\
+\midrule
+never (Noul) & At step t=2 of candidate k1, does the block or agent violate constraint c1 exactly as written in constraints.c1? & \textbf{true:} Read constraints.c1 literally. Use only the facts in candidates.k1 at step t=2: block, block\_edge, block\_angle, agent, contact, block\_speed. The facts at this step show the forbidden condition. \textbf{false:} The facts in candidates.k1 at step t=2 do not show the forbidden condition, or do not mention what constraints.c1 needs. \\
+always (Noul) & At step t=2 of candidate k1, are the facts consistent with constraint c1 as written in constraints.c1? & \textbf{true:} The facts in candidates.k1 at step t=2 (block, block\_edge, block\_angle, agent, contact, block\_speed) satisfy the requirement in constraints.c1, or do not mention what the requirement needs. \textbf{false:} The facts in candidates.k1 at step t=2 contradict the requirement in constraints.c1. \\
+soft (Score) & Overall across its steps, how well does candidate k1 respect constraint c1 as written in constraints.c1? & \textbf{0:} not at all: the facts of candidates.k1 (block\_speed, contact, block, block\_angle, agent) contradict constraints.c1 at most steps. \textbf{1:} poorly: the facts of candidates.k1 contradict constraints.c1 at many steps. \textbf{2:} partly: the facts of candidates.k1 match constraints.c1 at about half of the steps. \textbf{3:} mostly: the facts of candidates.k1 match constraints.c1 at nearly every step. \textbf{4:} fully: the facts of candidates.k1 match constraints.c1 at every step. \\
+\bottomrule
+\end{tabular}

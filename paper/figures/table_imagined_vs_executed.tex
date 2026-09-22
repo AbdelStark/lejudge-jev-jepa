@@ -1,0 +1,15 @@
+\begin{tabular}{llcccc}
+\toprule
+set & judge & imagined & executed & executed $\mid$ imagined clean & executed $\mid$ imagined violating \\
+\midrule
+spatial & oracle-on-probes & 0.43 & 0.92 & 0.94 & 0.90 \\
+spatial & keyword checker & 0.43 & 0.92 & 0.94 & 0.90 \\
+spatial & LeJudge / Jev & 0.12 & 0.88 & 0.90 & 0.78 \\
+spatial+temporal & oracle-on-probes & 0.36 & 0.51 & 0.36 & 0.75 \\
+spatial+temporal & keyword checker & 0.37 & 0.47 & 0.33 & 0.69 \\
+spatial+temporal & LeJudge / Jev & 0.64 & 0.57 & 0.52 & 0.61 \\
+implicit & oracle-on-probes & 0.43 & 0.69 & 0.51 & 0.92 \\
+implicit & keyword checker & 0.03 & 0.66 & 0.66 & 0.50 \\
+implicit & LeJudge / Jev & 0.58 & 0.73 & 0.57 & 0.84 \\
+\bottomrule
+\end{tabular}

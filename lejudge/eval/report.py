@@ -338,6 +338,12 @@ def build_report(results: Path | str = RESULTS, out: Path | str = "paper/figures
     summary["figures"].append("fig7_error_decomposition")
     if probes_meta:
         summary["probes"] = {"name": probes_meta.get("name"), "test": probes_meta["metrics"]["test"], "imagined": probes_meta.get("imagined")}
+    try:
+        from lejudge.eval.paper_figures import build_paper_figures
+
+        summary["paper_figures"] = build_paper_figures(results, out / "paper", probes_meta_path)
+    except Exception as e:  # noqa: BLE001 — paper figures must never break the core report
+        summary["paper_figures_error"] = repr(e)
     (out / "summary.json").write_text(json.dumps(summary, indent=2, default=_json_default))
     return summary
 
