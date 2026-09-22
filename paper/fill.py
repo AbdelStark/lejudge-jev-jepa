@@ -267,6 +267,10 @@ def main() -> None:
         vals["jo_items"] = str(j.item_id.nunique())
         vals["jo_rows"] = f"{len(j):,}"
         vals["jo_triples"] = f"{j.item_id.nunique() * j.constraint.nunique() * j.variant.nunique():,}"
+        core = j[j.judge.isin(["jev", "keyword", "oracle"]) & (j.repeat == 0)]
+        vals["jo_rows_core"] = f"{len(core):,}"
+        vals["jo_rows_repeats"] = f"{len(j[(j.repeat > 0)]):,}"
+        vals["jo_rows_llm"] = f"{len(j[j.judge.astype(str).str.startswith('llm')]):,}"
         vals["jo_n_variants"] = str(j.variant.nunique())
         vals["jo_n_imagined"] = str(j[j.source == "imagined"].item_id.nunique())
         vals["jo_n_executed"] = str(j[j.source == "executed"].item_id.nunique())
@@ -398,7 +402,7 @@ def write_diag_table(d: pd.DataFrame, out: Path) -> None:
 
 
 def write_judge_table(t: pd.DataFrame, out: Path) -> None:
-    rows = [("jev", "imagined", "probe-words"), ("jev", "executed", "probe-words"), ("jev", "executed", "gt-words"), ("keyword", "imagined", "probe-words"), ("keyword", "executed", "probe-words"), ("llm", "executed", "probe-words"), ("oracle", "imagined", "probe-words"), ("oracle", "executed", "gt-words")]
+    rows = [("jev", "imagined", "probe-words"), ("jev", "executed", "probe-words"), ("jev", "executed", "gt-words"), ("keyword", "imagined", "probe-words"), ("keyword", "executed", "probe-words"), ("llm", "executed", "probe-words"), ("llm", "executed", "gt-words"), ("oracle", "imagined", "probe-words"), ("oracle", "executed", "probe-words"), ("oracle", "executed", "gt-words")]
     names = {"jev": "LeJudge / Jev", "keyword": "keyword checker", "llm": "local LLM (7B)", "oracle": "oracle-on-probes"}
     lines = ["\\begin{tabular}{llcccccccc}", "\\toprule", "judge & items & $n$ & acc. & F1 & AUROC & ECE & acc. (paraphr.) & near-miss FPR & s / 1{,}000 \\\\", "\\midrule"]
     for j, src, desc in rows:
