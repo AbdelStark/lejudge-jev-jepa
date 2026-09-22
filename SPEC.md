@@ -177,10 +177,10 @@ Bootstrap 95 % CIs (10,000 resamples) for all rates; paired Wilcoxon across cond
 
 ## 9. Definition of done (MVP)
 
-- [ ] LeWM PushT success reproduced within 5 points of the paper's protocol
-- [ ] Probes: R² and bucket accuracy reported; ≥ 0.9 bucket accuracy on block position, ≥ 0.8 on angle bins
-- [ ] Judge-only study complete with all judges; tables in `artifacts/results/`
-- [ ] Planning study complete; Pareto curve; ablations
-- [ ] `make paper` regenerates figures offline from cache
-- [ ] Space deployed; 20-second clip recorded
-- [ ] Preprint draft with all numbers filled from `artifacts/results/`
+- [x] LeWM PushT success reproduced with the authors' protocol (86 % with history 3, 90 % with history 1, 50 episodes; the paper text gives no single number to compare against — see DECISIONS)
+- [x] Probes: R² and bucket accuracy reported in `artifacts/probes/pusht/linear@1/meta.json` (block cell 0.95, angle 0.94, edge 0.99)
+- [x] Judge-only study complete: Jev, keyword, oracle on 256 items × 12 constraints × 8 texts with 3 repeats on 64 items; local-LLM baseline on a 64-item subset; tables in `artifacts/results/judge_only.parquet`
+- [x] Planning study complete (4 conditions × 3 sets × 3 seeds × 30 episodes) with paired tests; λ sweep and ablations in `ablations.parquet`
+- [x] `make paper` regenerates figures offline from cache
+- [~] Space runs locally (`lejudge demo`, cached gallery of 20 seeds × 6 presets); 20-second clip at `artifacts/demo/clip.mp4`; not deployed to Hugging Face in this build
+- [x] Preprint draft `paper/main.tex` filled by `paper/fill.py` from `artifacts/results/`; unavailable numbers stay `[X]`

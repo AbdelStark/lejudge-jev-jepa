@@ -1,0 +1,207 @@
+# LeJudge PushT constraint library (RFC-0002). Written before any results.
+# Each entry: id, family, canonical text, 5 paraphrases, 2 near-miss negatives, oracle name,
+# oracle params, weight. Frozen at M3; the hash is recorded in docs/DECISIONS.md.
+version: pusht-lib@1
+constraints:
+  - id: edges_never
+    family: never
+    text: "Never let the T touch the left or right edge."
+    paraphrases:
+      - "Keep the T off the sides."
+      - "The block must not reach either side wall."
+      - "Do not let the block hit the left wall or the right wall."
+      - "The T stays away from the left and right borders of the board."
+      - "No contact between the T and the side edges of the arena."
+    negatives:
+      - "Never let the T touch the top edge."
+      - "Keep the agent off the sides."
+    oracle: block_edge
+    params: { walls: [left, right] }
+    weight: 1.0
+
+  - id: top_never
+    family: never
+    text: "The T must never reach the top edge."
+    paraphrases:
+      - "Keep the block away from the top wall."
+      - "The T should not touch the upper border."
+      - "Do not push the block up against the top of the board."
+      - "The block must stay clear of the top boundary."
+      - "No part of the T may reach the top edge of the arena."
+    negatives:
+      - "The T must never reach the bottom edge."
+      - "The agent must never reach the top edge."
+    oracle: block_edge
+    params: { walls: [top] }
+    weight: 1.0
+
+  - id: centre_avoid
+    family: never
+    text: "Keep the T out of the centre cell."
+    paraphrases:
+      - "The block must not be in the middle of the board."
+      - "Do not put the T in the central square."
+      - "Stay out of the centre with the block."
+      - "The T should never sit in the middle cell."
+      - "Avoid the central area with the block."
+    negatives:
+      - "Keep the agent out of the centre cell."
+      - "Keep the T in the centre cell."
+    oracle: block_in_cells
+    params: { cells: [centre] }
+    weight: 1.0
+
+  - id: agent_bottom_only
+    family: never
+    text: "The agent must not enter the top row."
+    paraphrases:
+      - "Keep the pusher out of the top row of cells."
+      - "The agent stays below the top third of the board."
+      - "Do not move the agent into the upper row."
+      - "The pusher must never be in the top row."
+      - "Never let the agent go into the top part of the arena."
+    negatives:
+      - "The block must not enter the top row."
+      - "The agent must not enter the bottom row."
+    oracle: agent_in_cells
+    params: { cells: [top-left, top-centre, top-right] }
+    weight: 1.0
+
+  - id: upright_always
+    family: always
+    text: "Keep the T roughly upright."
+    paraphrases:
+      - "The block should stay close to its upright orientation."
+      - "Do not tilt the T much."
+      - "The T must remain more or less upright at all times."
+      - "Keep the block standing straight."
+      - "The T should not lean far from vertical."
+    negatives:
+      - "Keep the T upside down."
+      - "Keep the agent roughly upright."
+    oracle: block_angle_not_in
+    params: { bins: [upright] }
+    weight: 1.0
+
+  - id: no_upside_down
+    family: never
+    text: "Never flip the T upside down."
+    paraphrases:
+      - "The block must not end up inverted."
+      - "Do not turn the T over."
+      - "The T should never be upside down."
+      - "Avoid flipping the block onto its head."
+      - "Never let the T point the wrong way up."
+    negatives:
+      - "Never tilt the T to the left."
+      - "Always flip the T upside down."
+    oracle: block_angle_in
+    params: { bins: [upside down] }
+    weight: 1.0
+
+  - id: no_push_tilted
+    family: never
+    text: "Do not push the block while it is on its side."
+    paraphrases:
+      - "Never touch the T when it is lying sideways."
+      - "If the block is on its side, keep the agent off it."
+      - "No pushing while the T is sideways."
+      - "Do not make contact with the block when it is on its side."
+      - "Avoid pushing the T while it lies on its side."
+    negatives:
+      - "Do not push the block while it is upright."
+      - "Do not push the block while it is upside down."
+    oracle: contact_while_angle_in
+    params: { bins: [on its side left, on its side right] }
+    weight: 1.0
+
+  - id: approach_below
+    family: always
+    text: "Approach the block from below."
+    paraphrases:
+      - "Make first contact with the T from underneath."
+      - "The agent should come at the block from the bottom side."
+      - "Touch the block from below, not from above."
+      - "Reach the T from beneath it."
+      - "Your first touch of the block must come from the lower side."
+    negatives:
+      - "Approach the block from above."
+      - "Approach the block from the left."
+    oracle: first_contact_not_below
+    params: {}
+    weight: 1.0
+
+  - id: gentle
+    family: soft
+    text: "Be gentle: move the block slowly."
+    paraphrases:
+      - "Push the T softly and slowly."
+      - "Do not shove the block; move it gently."
+      - "Keep the block's movements slow."
+      - "Handle the T with care and avoid fast pushes."
+      - "Move the block at a slow pace."
+    negatives:
+      - "Be quick: move the block fast."
+      - "Be gentle: move the agent slowly."
+    oracle: block_fast
+    params: { max_fraction_fast: 0.34 }
+    weight: 1.0
+
+  - id: stay_left_half
+    family: always
+    text: "Keep the block in the left half of the board."
+    paraphrases:
+      - "The T must stay on the left side of the arena."
+      - "Do not let the block cross into the right half."
+      - "Keep the T on the left."
+      - "The block belongs in the left half at all times."
+      - "Never move the block to the right side of the board."
+    negatives:
+      - "Keep the block in the right half of the board."
+      - "Keep the agent in the left half of the board."
+    oracle: block_in_cells
+    params: { cells: [top-centre, centre, bottom-centre, top-right, centre-right, bottom-right], centroid_x_min: 0.5 }
+    weight: 1.0
+
+  - id: no_contact_first3
+    family: never
+    text: "Do not touch the block during the first three steps."
+    paraphrases:
+      - "Keep away from the T at the very beginning."
+      - "No contact with the block in the first few steps."
+      - "Wait before touching the block: not during the first three steps."
+      - "The agent must not touch the T in steps one, two or three."
+      - "Hands off the block for the first three steps."
+    negatives:
+      - "Do not touch the block during the last three steps."
+      - "Touch the block during the first three steps."
+    oracle: contact_in_steps
+    params: { steps: [1, 2, 3] }
+    weight: 1.0
+
+  - id: corner_avoid
+    family: never
+    text: "Stay out of all four corners with the block."
+    paraphrases:
+      - "The T must never be in a corner cell."
+      - "Keep the block away from the corners of the board."
+      - "Do not let the T end up in any corner."
+      - "No corners for the block."
+      - "The block stays out of the four corner squares."
+    negatives:
+      - "Stay out of all four corners with the agent."
+      - "Stay in one of the four corners with the block."
+    oracle: block_in_cells
+    params: { cells: [top-left, top-right, bottom-left, bottom-right] }
+    weight: 1.0
+
+sets:
+  # RFC-0002 sets (kept for reference; under the expert-start protocol `edges` is almost never at
+  # stake and `upright` is rarely satisfiable — see docs/DECISIONS.md 2026-09-22).
+  edges: [edges_never]
+  edges+upright: [edges_never, upright_always]
+  # Study sets (frozen before the planning study; chosen from the base violation rates of
+  # unconstrained LeWM on the M0 episodes so that task and constraint actually conflict).
+  spatial: [centre_avoid]
+  spatial+temporal: [centre_avoid, no_contact_first3]
+  implicit: [gentle, approach_below]

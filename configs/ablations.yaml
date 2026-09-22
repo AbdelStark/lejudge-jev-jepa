@@ -1,0 +1,29 @@
+# Ablation grid (RFC-0006, exploratory). Jev only unless stated. Runs append to artifacts/results/ablations.parquet.
+data: artifacts/data/pusht_expert.npz
+base:
+  condition: jev
+  constraint_set: spatial
+  episodes: 20
+  seed: 0
+  K: 16
+  lam: 1.0
+  tau: 0.5
+  mode: every_k
+  judge_every: 5
+runs:
+  - { tag: lam_sweep_0.25, lam: 0.25 }
+  - { tag: lam_sweep_0.5, lam: 0.5 }
+  - { tag: lam_sweep_2, lam: 2.0 }
+  - { tag: lam_sweep_4, lam: 4.0 }
+  - { tag: K4, K: 4 }
+  - { tag: K32, K: 32 }
+  - { tag: K64, K: 64 }
+  - { tag: K32_lam4, K: 32, lam: 4.0 }
+  - { tag: final_only, mode: final_only }
+  - { tag: last_n3, mode: last_n, judge_last_n: 3 }
+  - { tag: per_iter, mode: per_iter }
+  - { tag: unjudged_none, unjudged: none }
+  - { tag: vocab_pusht2, vocab: pusht@2 }
+  - { tag: steps_half, steps: 2 }
+  - { tag: hard_reject, hard_reject: true }
+  - { tag: mlp_probe, probes: pusht/mlp@1 }

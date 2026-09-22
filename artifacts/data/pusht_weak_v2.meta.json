@@ -1,0 +1,26 @@
+{
+  "action_scaler": {
+    "mean": [
+      -0.0012630895311263129,
+      0.0013352224168143403
+    ],
+    "std": [
+      0.5008465570770441,
+      0.5005945082901884
+    ]
+  },
+  "checkpoint": {
+    "loader": "stable_worldmodel.wm.utils.load_pretrained",
+    "repo": "quentinll/lewm-pusht",
+    "revision": "22b330c28c27ead4bfd1888615af1340e3fe9052"
+  },
+  "collection_policy": "stable_worldmodel.envs.pusht.WeakPolicy(dist_constraint=100)",
+  "elapsed_s": 225.5,
+  "episodes": 1000,
+  "frames": 101000,
+  "max_episode_steps": 100,
+  "name": "pusht_weak_v2",
+  "num_envs": 16,
+  "seed": 2000,
+  "stable_worldmodel_commit": "4821c8e6a3f0f83b7e6a80da3a757e026ea9026b"
+}

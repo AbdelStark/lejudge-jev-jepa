@@ -1,0 +1,26 @@
+| condition | constraint_set | satisfiable | n | success | success_lo | success_hi | violation | violation_lo | violation_hi |
+|---|---|---|---|---|---|---|---|---|---|
+| jev | implicit | False | 52 | 0.923 | 0.846 | 0.981 | 0.654 | 0.519 | 0.788 |
+| keyword | implicit | False | 52 | 0.904 | 0.827 | 0.981 | 0.654 | 0.519 | 0.788 |
+| lewm | implicit | False | 52 | 0.923 | 0.846 | 0.981 | 0.654 | 0.519 | 0.788 |
+| oracle | implicit | False | 52 | 0.865 | 0.769 | 0.942 | 0.596 | 0.462 | 0.731 |
+| jev | implicit | True | 38 | 0.737 | 0.579 | 0.868 | 0.500 | 0.342 | 0.658 |
+| keyword | implicit | True | 38 | 0.711 | 0.553 | 0.842 | 0.421 | 0.263 | 0.579 |
+| lewm | implicit | True | 38 | 0.737 | 0.579 | 0.868 | 0.447 | 0.289 | 0.605 |
+| oracle | implicit | True | 38 | 0.763 | 0.632 | 0.895 | 0.421 | 0.263 | 0.579 |
+| jev | spatial | False | 48 | 0.896 | 0.812 | 0.979 | 0.917 | 0.833 | 0.979 |
+| keyword | spatial | False | 48 | 0.854 | 0.750 | 0.938 | 0.917 | 0.833 | 0.979 |
+| lewm | spatial | False | 48 | 0.896 | 0.812 | 0.979 | 0.938 | 0.854 | 1.000 |
+| oracle | spatial | False | 48 | 0.854 | 0.750 | 0.938 | 0.917 | 0.833 | 0.979 |
+| jev | spatial | True | 42 | 0.786 | 0.666 | 0.905 | 0.143 | 0.048 | 0.262 |
+| keyword | spatial | True | 42 | 0.762 | 0.619 | 0.881 | 0.143 | 0.048 | 0.262 |
+| lewm | spatial | True | 42 | 0.786 | 0.643 | 0.905 | 0.143 | 0.048 | 0.262 |
+| oracle | spatial | True | 42 | 0.762 | 0.619 | 0.881 | 0.143 | 0.048 | 0.262 |
+| jev | spatial+temporal | False | 70 | 0.914 | 0.843 | 0.971 | 0.943 | 0.886 | 0.986 |
+| keyword | spatial+temporal | False | 70 | 0.900 | 0.829 | 0.957 | 0.929 | 0.871 | 0.986 |
+| lewm | spatial+temporal | False | 70 | 0.900 | 0.829 | 0.957 | 0.971 | 0.929 | 1.000 |
+| oracle | spatial+temporal | False | 70 | 0.871 | 0.786 | 0.943 | 0.929 | 0.871 | 0.986 |
+| jev | spatial+temporal | True | 20 | 0.600 | 0.400 | 0.800 | 0.500 | 0.300 | 0.700 |
+| keyword | spatial+temporal | True | 20 | 0.650 | 0.450 | 0.850 | 0.400 | 0.200 | 0.600 |
+| lewm | spatial+temporal | True | 20 | 0.650 | 0.450 | 0.850 | 0.450 | 0.250 | 0.650 |
+| oracle | spatial+temporal | True | 20 | 0.700 | 0.500 | 0.900 | 0.500 | 0.300 | 0.700 |

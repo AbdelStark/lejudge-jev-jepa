@@ -1,0 +1,59 @@
+[project]
+name = "lejudge"
+version = "0.1.0"
+description = "LeJudge: a natural-language cost module for JEPA world-model planning (LeWM + Jev)"
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "MIT" }
+dependencies = [
+  "numpy",
+  "torch",
+  "torchvision",
+  "pyyaml",
+  "typer",
+  "pandas",
+  "pyarrow",
+  "scipy",
+  "matplotlib",
+  "scikit-learn",
+  "typesafe-sdk>=0.5.7",
+  "stable-worldmodel @ git+https://github.com/galilai-group/stable-worldmodel.git@4821c8e6a3f0f83b7e6a80da3a757e026ea9026b",
+  "stable-pretraining>=0.1.8",
+  "transformers>=4.50,<5",
+  "pygame",
+  "pymunk",
+  "shapely",
+  "opencv-python-headless",
+  "imageio[ffmpeg]",
+]
+
+[project.optional-dependencies]
+llm = ["openai"]
+demo = ["gradio"]
+dev = ["pytest", "ruff", "hypothesis"]
+
+[project.scripts]
+lejudge = "lejudge.cli:app"
+
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+include = ["lejudge*"]
+
+[tool.setuptools.package-data]
+lejudge = ["vocab/*.yaml", "constraints/*.yaml", "judge/*.yaml"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP"]
+ignore = ["E501", "B905"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"
+filterwarnings = ["ignore::DeprecationWarning", "ignore::UserWarning"]

@@ -1,0 +1,48 @@
+{
+  "run": {
+    "condition": "lewm",
+    "constraint_set": "spatial",
+    "seed": 0,
+    "episodes": 30,
+    "lam": 1.0,
+    "K": 16,
+    "tau": 0.5,
+    "mode": "last_n",
+    "judge_last_n": 3,
+    "steps": null,
+    "vocab": "pusht@1",
+    "probes": "pusht/linear@1",
+    "hard_reject": false,
+    "paraphrase": "canonical",
+    "data_path": "artifacts/data/pusht_expert.npz",
+    "device": null,
+    "tag": "",
+    "plan_overrides": {},
+    "llm_model": "qwen2.5:7b-instruct"
+  },
+  "plan": {
+    "horizon": 5,
+    "receding_horizon": 5,
+    "action_block": 5,
+    "history_len": 3,
+    "warm_start": true,
+    "num_samples": 300,
+    "n_steps": 30,
+    "topk": 30,
+    "var_scale": 1.0,
+    "seed": 1234,
+    "device": null
+  },
+  "constraints": [
+    "Keep the T out of the centre cell."
+  ],
+  "library_sha256": "61d416fdee6c37eaa5b300975cd95eefa427e0aa2498adc182047cb3e256b42a",
+  "bank": "lejudge.pusht@0.1.0",
+  "checkpoint": {
+    "repo": "quentinll/lewm-pusht",
+    "revision": "22b330c28c27ead4bfd1888615af1340e3fe9052",
+    "loader": "stable_worldmodel.wm.utils.load_pretrained"
+  },
+  "device": "mps:0",
+  "torch": "2.14.0"
+}

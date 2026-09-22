@@ -1,0 +1,28 @@
+{
+  "action_scaler": {
+    "mean": [
+      -0.012709462826977852,
+      0.012357655097658576
+    ],
+    "std": [
+      0.20278082122348237,
+      0.21079270203484302
+    ]
+  },
+  "action_scaler_frames": 432000,
+  "checkpoint": {
+    "loader": "stable_worldmodel.wm.utils.load_pretrained",
+    "repo": "quentinll/lewm-pusht",
+    "revision": "22b330c28c27ead4bfd1888615af1340e3fe9052"
+  },
+  "contact": "geometric (lejudge.types.CONTACT_TOLERANCE)",
+  "elapsed_s": 86.3,
+  "episodes": 24,
+  "frames": 3000,
+  "name": "pusht_expert_ci",
+  "readable_prefix_frames": 432000,
+  "source": "artifacts/data/expert/pusht_expert_prefix.h5",
+  "source_repo": "quentinll/lewm-pusht (pusht_expert_train.h5.zst)",
+  "stable_worldmodel_commit": "4821c8e6a3f0f83b7e6a80da3a757e026ea9026b",
+  "note": "CI fixture: 24 episodes of pusht_expert.npz (same scaler)"
+}

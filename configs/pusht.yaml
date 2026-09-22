@@ -1,0 +1,44 @@
+# Frozen configuration for the PushT study. Every result row carries these ids.
+env: swm/PushT-v1
+image_shape: [224, 224]
+checkpoint:
+  repo: quentinll/lewm-pusht
+  revision: 22b330c28c27ead4bfd1888615af1340e3fe9052
+  loader: stable_worldmodel.wm.utils.load_pretrained
+stable_worldmodel_commit: 4821c8e6a3f0f83b7e6a80da3a757e026ea9026b
+vocab: pusht@1
+library: pusht-lib@1
+bank: lejudge.pusht@0.1.0
+probes: pusht/linear@1
+jev:
+  request_model: jev-latest
+  pin_prefix: jev-1.13
+llm_small: qwen2.5:7b-instruct
+# Planning budget (le-wm config/eval/pusht.yaml + solver/cem.yaml)
+plan:
+  horizon: 5
+  receding_horizon: 5
+  action_block: 5
+  history_len: 3
+  warm_start: true
+solver:
+  num_samples: 300
+  n_steps: 30
+  topk: 30
+  var_scale: 1.0
+eval:
+  goal_offset_steps: 25
+  eval_budget: 50
+  max_episode_steps: 100
+data:
+  collection_policy: WeakPolicy(dist_constraint=100)
+  episodes: 200
+  seed: 1000
+jevcost:
+  K: 16
+  lam: 1.0
+  tau: 0.5
+  mode: every_k
+  judge_every: 5
+  judge_last_n: 3
+  standardize: true

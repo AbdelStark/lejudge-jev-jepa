@@ -1,0 +1,61 @@
+{
+  "config": {
+    "bank": "lejudge.pusht@0.1.0",
+    "checkpoint": {
+      "loader": "stable_worldmodel.wm.utils.load_pretrained",
+      "repo": "quentinll/lewm-pusht",
+      "revision": "22b330c28c27ead4bfd1888615af1340e3fe9052"
+    },
+    "data": {
+      "collection_policy": "WeakPolicy(dist_constraint=100)",
+      "episodes": 200,
+      "seed": 1000
+    },
+    "env": "swm/PushT-v1",
+    "eval": {
+      "eval_budget": 50,
+      "goal_offset_steps": 25,
+      "max_episode_steps": 100
+    },
+    "image_shape": [
+      224,
+      224
+    ],
+    "jev": {
+      "pin_prefix": "jev-1.13",
+      "request_model": "jev-latest"
+    },
+    "jevcost": {
+      "K": 16,
+      "judge_every": 5,
+      "judge_last_n": 3,
+      "lam": 1.0,
+      "mode": "every_k",
+      "standardize": true,
+      "tau": 0.5
+    },
+    "library": "pusht-lib@1",
+    "llm_small": "qwen2.5:7b-instruct",
+    "plan": {
+      "action_block": 5,
+      "history_len": 3,
+      "horizon": 5,
+      "receding_horizon": 5,
+      "warm_start": true
+    },
+    "probes": "pusht/linear@1",
+    "solver": {
+      "n_steps": 30,
+      "num_samples": 300,
+      "topk": 30,
+      "var_scale": 1.0
+    },
+    "stable_worldmodel_commit": "4821c8e6a3f0f83b7e6a80da3a757e026ea9026b",
+    "vocab": "pusht@1"
+  },
+  "elapsed_s": 0.43706655502319336,
+  "judges": "llm",
+  "n_executed": 16,
+  "n_imagined": 0,
+  "seed": 0
+}

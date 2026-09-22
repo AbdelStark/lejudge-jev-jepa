@@ -1,0 +1,19 @@
+name: ci
+on: [push, pull_request]
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    env:
+      LEJUDGE_MODE: offline
+      SDL_VIDEODRIVER: dummy
+      STABLEWM_HOME: /tmp/stable-wm
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v3
+      - run: uv venv --python 3.10 && uv pip install -e '.[dev]'
+      - run: .venv/bin/python -m ruff check lejudge tests paper
+      - run: .venv/bin/python -m pytest -q
+      - run: .venv/bin/lejudge lint
+      # RFC-0008 acceptance: judge-only study on a 50-item subset, fully from the shipped cache
+      - run: .venv/bin/lejudge judge-study --judges jev,keyword,oracle --n-executed 50 --n-imagined 0 --data artifacts/data/ci/pusht_expert_ci.npz --out /tmp/ci_judge_only.parquet --variants canonical,p1,n1
+      - run: .venv/bin/lejudge report --out /tmp/ci_figures

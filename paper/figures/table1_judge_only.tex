@@ -1,0 +1,17 @@
+\begin{tabular}{llllllllll}
+\toprule
+judge & source & description & n\_items & canonical\_accuracy & canonical\_auroc & canonical\_ece & paraphrase\_accuracy & negative\_fpr & latency\_ms\_per\_1000 \\
+\midrule
+jev & executed & gt-words & 64 & 0.883 & 0.955 & 0.113 & 0.858 & 0.535 & 2458.217 \\
+jev & executed & probe-words & 64 & 0.862 & 0.939 & 0.083 & 0.853 & 0.529 & 2458.217 \\
+jev & imagined & probe-words & 128 & 0.881 & 0.937 & 0.107 & 0.871 & 0.383 & 2561.187 \\
+keyword & executed & gt-words & 64 & 0.898 & 0.918 & 0.075 & 0.642 & 0.025 & 0.000 \\
+keyword & executed & probe-words & 64 & 0.884 & 0.901 & 0.086 & 0.642 & 0.024 & 0.000 \\
+keyword & imagined & probe-words & 128 & 0.894 & 0.895 & 0.086 & 0.738 & 0.020 & 0.000 \\
+llm & executed & gt-words & 8 & 0.615 & 0.611 & 0.332 & 0.000 & nan & 565954.823 \\
+llm & executed & probe-words & 8 & 0.594 & 0.588 & 0.356 & 0.000 & nan & 565954.823 \\
+oracle & executed & gt-words & 64 & 0.971 & 1.000 & 0.013 & 0.971 & nan & 0.000 \\
+oracle & executed & probe-words & 64 & 0.971 & 1.000 & 0.013 & 0.971 & nan & 0.000 \\
+oracle & imagined & probe-words & 128 & 0.986 & 1.000 & 0.003 & 0.986 & nan & 0.000 \\
+\bottomrule
+\end{tabular}

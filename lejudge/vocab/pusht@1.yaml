@@ -1,0 +1,33 @@
+# Vocabulary pusht@1 — every numeric threshold used to turn PushT symbols into words.
+# Coordinates are normalised by the 512 px arena; origin top-left, y grows downward.
+version: pusht@1
+grid: 3
+grid_names:
+  - [top-left, top-centre, top-right]
+  - [centre-left, centre, centre-right]
+  - [bottom-left, bottom-centre, bottom-right]
+# Walls sit 5 px inside the window (see PushT._setup); the T "touches" a wall when the
+# nearest polygon vertex is within `edge_margin` of it.
+wall_inset: 0.009765625
+edge_margin: 0.02
+# T geometry (PushT.add_tee with the default block scale of 30 px).
+block_scale: 0.05859375
+# Signed angle bins in degrees, measured from the canonical orientation (angle 0).
+# Positive angles are the pymunk (counter-clockwise, y-up) direction; on screen (y down)
+# they appear clockwise. "tilted right" therefore means the top bar rotates clockwise
+# on screen. Both the oracle and the words use this same table.
+angle_bins_deg:
+  upright: [-30, 30]
+  tilted right: [30, 90]
+  on its side right: [90, 150]
+  upside down: [150, 210]
+  on its side left: [210, 270]
+  tilted left: [270, 330]
+# Block centroid displacement between consecutive planning steps (normalised units).
+# Calibrated on expert PushT data (block-centroid displacement per planning step of 5 env steps):
+# p50 0.007, p90 0.046; moving-step tertiles 0.023 / 0.039. still < 2 px, slow < ~15 px, fast otherwise.
+speed_thresholds:
+  still: 0.004
+  slow: 0.03
+# |contact logit| below this band means the probe is unsure and the field is omitted.
+contact_logit_band: 0.5

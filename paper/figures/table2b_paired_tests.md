@@ -1,0 +1,20 @@
+| condition | ref | constraint_set | metric | n_pairs | risk_difference | rd_lo | rd_hi | p | p_holm |
+|---|---|---|---|---|---|---|---|---|---|
+| jev | lewm | implicit | violation | 90 | 0.0222 | -0.0333 | 0.0889 | 0.4795 | 0.9590 |
+| jev | lewm | spatial | violation | 90 | -0.0111 | -0.0333 | 0.0000 | 0.3173 | 0.9519 |
+| jev | lewm | spatial+temporal | violation | 90 | -0.0111 | -0.0444 | 0.0222 | 0.5637 | 0.9590 |
+| keyword | lewm | implicit | violation | 90 | -0.0111 | -0.0778 | 0.0556 | 0.7630 | 0.7630 |
+| keyword | lewm | spatial | violation | 90 | -0.0111 | -0.0333 | 0.0000 | 0.3173 | 0.6346 |
+| keyword | lewm | spatial+temporal | violation | 90 | -0.0444 | -0.0889 | -0.0111 | 0.0455 | 0.1365 |
+| oracle | lewm | implicit | violation | 90 | -0.0444 | -0.1222 | 0.0333 | 0.2482 | 0.7446 |
+| oracle | lewm | spatial | violation | 90 | -0.0111 | -0.0333 | 0.0000 | 0.3173 | 0.7446 |
+| oracle | lewm | spatial+temporal | violation | 90 | -0.0222 | -0.0667 | 0.0222 | 0.3173 | 0.7446 |
+| jev | lewm | implicit | success | 90 | 0.0000 | -0.0444 | 0.0444 | 1.0000 | 1.0000 |
+| jev | lewm | spatial | success | 90 | 0.0000 | -0.0556 | 0.0556 | 1.0000 | 1.0000 |
+| jev | lewm | spatial+temporal | success | 90 | 0.0000 | -0.0444 | 0.0444 | 1.0000 | 1.0000 |
+| keyword | lewm | implicit | success | 90 | -0.0222 | -0.0889 | 0.0333 | 0.4795 | 0.9590 |
+| keyword | lewm | spatial | success | 90 | -0.0333 | -0.1000 | 0.0333 | 0.3173 | 0.9519 |
+| keyword | lewm | spatial+temporal | success | 90 | 0.0000 | -0.0667 | 0.0667 | 1.0000 | 1.0000 |
+| oracle | lewm | implicit | success | 90 | -0.0222 | -0.0778 | 0.0333 | 0.4142 | 0.9519 |
+| oracle | lewm | spatial | success | 90 | -0.0333 | -0.1000 | 0.0333 | 0.3173 | 0.9519 |
+| oracle | lewm | spatial+temporal | success | 90 | -0.0111 | -0.0778 | 0.0667 | 0.7630 | 0.9519 |

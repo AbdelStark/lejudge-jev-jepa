@@ -1,0 +1,432 @@
+{
+  "checkpoint": {
+    "loader": "stable_worldmodel.wm.utils.load_pretrained",
+    "repo": "quentinll/lewm-pusht",
+    "revision": "22b330c28c27ead4bfd1888615af1340e3fe9052"
+  },
+  "dataset": {
+    "episodes": 200,
+    "frames": 20200,
+    "meta": {
+      "action_scaler": {
+        "mean": [
+          -0.002206871473012143,
+          0.00506312330497658
+        ],
+        "std": [
+          0.5035120204535,
+          0.49845680804776527
+        ]
+      },
+      "checkpoint": {
+        "loader": "stable_worldmodel.wm.utils.load_pretrained",
+        "repo": "quentinll/lewm-pusht",
+        "revision": "22b330c28c27ead4bfd1888615af1340e3fe9052"
+      },
+      "collection_policy": "stable_worldmodel.envs.pusht.WeakPolicy(dist_constraint=100)",
+      "elapsed_s": 32.0,
+      "episodes": 200,
+      "frames": 20200,
+      "max_episode_steps": 100,
+      "name": "pusht_weak_v1",
+      "num_envs": 8,
+      "seed": 1000,
+      "stable_worldmodel_commit": "4821c8e6a3f0f83b7e6a80da3a757e026ea9026b"
+    },
+    "path": "artifacts/data/pusht_weak_v1.npz"
+  },
+  "elapsed_s": 4.8,
+  "hparams": {
+    "dropout": 0.1,
+    "epochs": 60,
+    "hidden": 256,
+    "lr": 0.001,
+    "val_mse": 0.028505008667707443
+  },
+  "imagined": {
+    "action_block": 5,
+    "curve": [
+      {
+        "agent_error_px": 31.918741939254815,
+        "angle_error_deg": 14.925597169491486,
+        "block_error_px": 30.82334233110765,
+        "bucket_accuracy": {
+          "agent": 0.755,
+          "block": 0.8475,
+          "block_angle": 0.8225,
+          "block_edge": 0.725,
+          "contact": 0.815
+        },
+        "h": 0
+      },
+      {
+        "agent_error_px": 46.654560714401384,
+        "angle_error_deg": 18.588946462793537,
+        "block_error_px": 37.63742942391033,
+        "bucket_accuracy": {
+          "agent": 0.6525,
+          "block": 0.82,
+          "block_angle": 0.76,
+          "block_edge": 0.65,
+          "contact": 0.7725
+        },
+        "h": 1
+      },
+      {
+        "agent_error_px": 52.72146190004449,
+        "angle_error_deg": 23.84157480243659,
+        "block_error_px": 45.235308532459655,
+        "bucket_accuracy": {
+          "agent": 0.6475,
+          "block": 0.76,
+          "block_angle": 0.7225,
+          "block_edge": 0.6475,
+          "contact": 0.75
+        },
+        "h": 2
+      },
+      {
+        "agent_error_px": 63.03576347800806,
+        "angle_error_deg": 29.72130144250794,
+        "block_error_px": 52.49109692008797,
+        "bucket_accuracy": {
+          "agent": 0.5925,
+          "block": 0.7175,
+          "block_angle": 0.64,
+          "block_edge": 0.6,
+          "contact": 0.7125
+        },
+        "h": 3
+      },
+      {
+        "agent_error_px": 71.70672536962897,
+        "angle_error_deg": 33.658555941162724,
+        "block_error_px": 57.879579067891825,
+        "bucket_accuracy": {
+          "agent": 0.6075,
+          "block": 0.7075,
+          "block_angle": 0.6225,
+          "block_edge": 0.57,
+          "contact": 0.735
+        },
+        "h": 4
+      },
+      {
+        "agent_error_px": 78.11729554844383,
+        "angle_error_deg": 37.79927262803177,
+        "block_error_px": 65.80561628472228,
+        "bucket_accuracy": {
+          "agent": 0.6425,
+          "block": 0.66,
+          "block_angle": 0.555,
+          "block_edge": 0.57,
+          "contact": 0.735
+        },
+        "h": 5
+      }
+    ],
+    "horizon": 5,
+    "n_starts": 400
+  },
+  "kind": "mlp",
+  "metrics": {
+    "test": {
+      "angle_error_deg": 17.34132437673143,
+      "bucket_accuracy": {
+        "agent": 0.7881188118811882,
+        "block": 0.8415841584158416,
+        "block_angle": 0.7663366336633664,
+        "block_edge": 0.7183168316831683,
+        "contact": 0.8173267326732673
+      },
+      "contact": {
+        "accuracy": 0.8173267326732673,
+        "auroc": 0.8909421697497346
+      },
+      "mse": {
+        "agent_xy": 0.0035074446022954294,
+        "angle_sincos": 0.10430600309174483,
+        "block_xy": 0.0026970945207769477
+      },
+      "n": 2020,
+      "position_error_px": {
+        "agent": 32.88494962513599,
+        "block": 31.57269188007314
+      },
+      "r2": {
+        "agent_xy": 0.9358948344737616,
+        "angle_sincos": 0.7820221208712711,
+        "block_xy": 0.9498341892890813
+      }
+    },
+    "train": {
+      "angle_error_deg": 5.861175283272255,
+      "bucket_accuracy": {
+        "agent": 0.8490717821782178,
+        "block": 0.8604579207920792,
+        "block_angle": 0.8858292079207921,
+        "block_edge": 0.8356435643564356,
+        "contact": 0.9398514851485148
+      },
+      "contact": {
+        "accuracy": 0.9398514851485148,
+        "auroc": 0.9882632627158779
+      },
+      "mse": {
+        "agent_xy": 0.0018313000583641892,
+        "angle_sincos": 0.02190724955537177,
+        "block_xy": 0.0012424396895552598
+      },
+      "n": 16160,
+      "position_error_px": {
+        "agent": 25.186845798548138,
+        "block": 22.022314626677243
+      },
+      "r2": {
+        "agent_xy": 0.9654888019162436,
+        "angle_sincos": 0.9561830593933045,
+        "block_xy": 0.9749694894479014
+      }
+    },
+    "val": {
+      "angle_error_deg": 14.836439456114734,
+      "bucket_accuracy": {
+        "agent": 0.7242574257425742,
+        "block": 0.8361386138613861,
+        "block_angle": 0.8193069306930693,
+        "block_edge": 0.7678217821782178,
+        "contact": 0.7851485148514852
+      },
+      "contact": {
+        "accuracy": 0.7851485148514852,
+        "auroc": 0.8791903542077798
+      },
+      "mse": {
+        "agent_xy": 0.00497734178974513,
+        "angle_sincos": 0.0775173873560338,
+        "block_xy": 0.003020299185786088
+      },
+      "n": 2020,
+      "position_error_px": {
+        "agent": 41.02787733386854,
+        "block": 34.409177717324944
+      },
+      "r2": {
+        "agent_xy": 0.9200291973259509,
+        "angle_sincos": 0.8447690381568942,
+        "block_xy": 0.953649712860019
+      }
+    }
+  },
+  "name": "pusht/mlp@1",
+  "seed": 0,
+  "split": {
+    "test": [
+      7,
+      29,
+      31,
+      33,
+      59,
+      69,
+      76,
+      77,
+      78,
+      95,
+      104,
+      113,
+      120,
+      121,
+      127,
+      169,
+      176,
+      182,
+      184,
+      199
+    ],
+    "train": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      8,
+      9,
+      10,
+      11,
+      13,
+      15,
+      16,
+      17,
+      18,
+      19,
+      20,
+      21,
+      22,
+      23,
+      24,
+      25,
+      27,
+      28,
+      30,
+      34,
+      35,
+      36,
+      37,
+      38,
+      39,
+      40,
+      41,
+      42,
+      43,
+      44,
+      45,
+      47,
+      48,
+      50,
+      52,
+      53,
+      54,
+      55,
+      57,
+      60,
+      62,
+      63,
+      64,
+      65,
+      66,
+      67,
+      68,
+      70,
+      71,
+      72,
+      74,
+      75,
+      79,
+      80,
+      81,
+      82,
+      83,
+      84,
+      85,
+      86,
+      87,
+      88,
+      89,
+      90,
+      91,
+      92,
+      93,
+      94,
+      97,
+      98,
+      99,
+      100,
+      102,
+      103,
+      105,
+      106,
+      107,
+      108,
+      109,
+      110,
+      111,
+      112,
+      114,
+      116,
+      117,
+      118,
+      119,
+      122,
+      123,
+      124,
+      126,
+      128,
+      129,
+      130,
+      131,
+      132,
+      133,
+      134,
+      135,
+      136,
+      137,
+      138,
+      139,
+      140,
+      141,
+      142,
+      143,
+      144,
+      145,
+      146,
+      147,
+      148,
+      149,
+      150,
+      151,
+      152,
+      153,
+      154,
+      155,
+      156,
+      157,
+      158,
+      159,
+      160,
+      161,
+      162,
+      163,
+      164,
+      165,
+      167,
+      168,
+      170,
+      171,
+      172,
+      174,
+      175,
+      177,
+      178,
+      179,
+      180,
+      183,
+      186,
+      187,
+      188,
+      189,
+      191,
+      192,
+      193,
+      194,
+      195,
+      196,
+      197,
+      198
+    ],
+    "val": [
+      12,
+      14,
+      26,
+      32,
+      46,
+      49,
+      51,
+      56,
+      58,
+      61,
+      73,
+      96,
+      101,
+      115,
+      125,
+      166,
+      173,
+      181,
+      185,
+      190
+    ]
+  },
+  "vocab": "pusht@1"
+}

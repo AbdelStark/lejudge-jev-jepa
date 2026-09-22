@@ -1,0 +1,4 @@
+judge,n_pairs,repeats,score_std_mean,score_std_max
+jev,768,3,0.012865527277597455,0.09797958971132714
+keyword,768,3,0.0,0.0
+oracle,768,3,0.0,0.0
