@@ -38,6 +38,10 @@ def pts(x) -> str:
     return "[X]" if x is None or pd.isna(x) else f"{100 * float(x):+.0f}"
 
 
+def pts1(x) -> str:
+    return "[X]" if x is None or pd.isna(x) else f"{100 * float(x):+.1f}"
+
+
 def main() -> None:
     from lejudge.constraints import load_library
     from lejudge.eval.report import annotate_satisfiable, paired_tests, planning_table
@@ -120,6 +124,8 @@ def main() -> None:
             sk = str(r.constraint_set).replace("+", "_")
             vals[f"{key}_{ck}_{sk}_viol"] = ci(r.violation, r.violation_lo, r.violation_hi)
             vals[f"{key}_{ck}_{sk}_viol_pct"] = pct(r.violation)
+            vals[f"{key}_{ck}_{sk}_viol_pct1"] = pct1(r.violation)
+            vals[f"{key}_{ck}_{sk}_succ_pct1"] = pct1(r.success)
             vals[f"{key}_{ck}_{sk}_succ"] = ci(r.success, r.success_lo, r.success_hi)
             vals[f"{key}_{ck}_{sk}_succ_pct"] = pct(r.success)
             vals[f"{key}_{ck}_{sk}_n"] = str(int(r.n))
@@ -130,6 +136,7 @@ def main() -> None:
             ck = str(cond).replace(":", "_").replace(".", "")
             vals[f"{key}_{ck}_all_viol_pct"] = pct(g.violation.mean())
             vals[f"{key}_{ck}_all_succ_pct"] = pct(g.success.mean())
+            vals[f"{key}_{ck}_all_succ_pct1"] = pct1(g.success.mean())
             vals[f"{key}_{ck}_all_held"] = pct(g.abstention_rate.mean())
             vals[f"{key}_{ck}_all_calls"] = num(g.judge_calls.mean(), 1)
             vals[f"{key}_{ck}_all_tokens"] = f"{g.tokens_in.mean():,.0f}"
@@ -139,6 +146,7 @@ def main() -> None:
             ck = str(r.condition).replace(":", "_").replace(".", "")
             sk = str(r.constraint_set).replace("+", "_")
             vals[f"{key}_{ck}_{sk}_{r.metric}_rd"] = pts(r.risk_difference)
+            vals[f"{key}_{ck}_{sk}_{r.metric}_rd1"] = pts1(r.risk_difference)
             vals[f"{key}_{ck}_{sk}_{r.metric}_rdci"] = f"[{100 * r.rd_lo:+.0f}, {100 * r.rd_hi:+.0f}]"
             vals[f"{key}_{ck}_{sk}_{r.metric}_p"] = num(r.p, 3)
             vals[f"{key}_{ck}_{sk}_{r.metric}_pholm"] = num(r.p_holm, 3)
@@ -192,11 +200,14 @@ def main() -> None:
             sk = str(r.constraint_set).replace("+", "_")
             vals[f"s3_{ck}_{sk}_viol"] = ci(r.violation, r.violation_lo, r.violation_hi)
             vals[f"s3_{ck}_{sk}_viol_pct"] = pct(r.violation)
+            vals[f"s3_{ck}_{sk}_viol_pct1"] = pct1(r.violation)
+            vals[f"s3_{ck}_{sk}_succ_pct1"] = pct1(r.success)
             vals[f"s3_{ck}_{sk}_succ_pct"] = pct(r.success)
             vals[f"s3_{ck}_{sk}_held"] = pct(r.abstention_rate)
         for cond, g in both.groupby("condition"):
             ck = str(cond).replace(":", "_").replace(".", "")
             vals[f"s3_{ck}_all_succ_pct"] = pct(g.success.mean())
+            vals[f"s3_{ck}_all_succ_pct1"] = pct1(g.success.mean())
             vals[f"s3_{ck}_all_viol_pct"] = pct(g.violation.mean())
         for ref, rk in (("lewm", "vslewm"), ("jev:tau0.5", "vsgate")):
             tt = paired_tests(both, ref, "violation")
@@ -204,6 +215,7 @@ def main() -> None:
                 ck = str(r.condition).replace(":", "_").replace(".", "")
                 sk = str(r.constraint_set).replace("+", "_")
                 vals[f"s3_{ck}_{sk}_{rk}_rd"] = pts(r.risk_difference)
+                vals[f"s3_{ck}_{sk}_{rk}_rd1"] = pts1(r.risk_difference)
                 vals[f"s3_{ck}_{sk}_{rk}_rdci"] = f"[{100 * r.rd_lo:+.0f}, {100 * r.rd_hi:+.0f}]"
                 vals[f"s3_{ck}_{sk}_{rk}_pholm"] = num(r.p_holm, 3)
         write_planning_table(t3, FIG / "table_planning_s3.tex", both, conds=["lewm", "keyword", "oracle", "jev:tau0.5", "jev:tau0.75", "jev:tau1.0"])
@@ -254,6 +266,8 @@ def main() -> None:
             vals[key + "_lat"] = num(r.latency_ms_per_1000 / 1000.0, 1)
         vals["jo_items"] = str(j.item_id.nunique())
         vals["jo_rows"] = f"{len(j):,}"
+        vals["jo_triples"] = f"{j.item_id.nunique() * j.constraint.nunique() * j.variant.nunique():,}"
+        vals["jo_n_variants"] = str(j.variant.nunique())
         vals["jo_n_imagined"] = str(j[j.source == "imagined"].item_id.nunique())
         vals["jo_n_executed"] = str(j[j.source == "executed"].item_id.nunique())
         ct = consistency_table(j)
@@ -281,10 +295,15 @@ def main() -> None:
         gj = j[(j.judge == "jev") & (j.description == "probe-words") & (j.repeat == 0)]
         jd = 100 * (prf(gj[gj.variant == "canonical"].label.to_numpy(), gj[gj.variant == "canonical"].score.to_numpy())["accuracy"] - prf(gj[gj.variant.str.startswith("p")].label.to_numpy(), gj[gj.variant.str.startswith("p")].score.to_numpy())["accuracy"])
         vals["jo_jev_drop_pts"] = f"{jd:.0f}"
+        for src in ("imagined", "executed"):
+            gk = j[(j.judge == "keyword") & (j.description == "probe-words") & (j.repeat == 0) & (j.source == src)]
+            vals[f"jo_kw_{src}_canon"] = num(prf(gk[gk.variant == "canonical"].label.to_numpy(), gk[gk.variant == "canonical"].score.to_numpy())["accuracy"], 2)
+            vals[f"jo_kw_{src}_para"] = num(prf(gk[gk.variant.str.startswith("p")].label.to_numpy(), gk[gk.variant.str.startswith("p")].score.to_numpy())["accuracy"], 2)
         lj = j[j.judge.astype(str).str.startswith("llm")]
         if len(lj):
             ok = lj[~lj.failed]
             vals["llm_items"] = str(lj.item_id.nunique())
+            vals["llm_windows"] = str(lj[lj.description == "probe-words"].item_id.nunique())
             vals["llm_failed_pct"] = pct(lj.failed.mean())
             vals["llm_valid_acc"] = num(prf(ok.label.to_numpy(), ok.score.to_numpy())["accuracy"], 2) if len(ok) else "[X]"
             vals["llm_valid_auroc"] = num(auroc(ok.label.to_numpy(), ok.score.to_numpy()), 2) if len(ok) else "[X]"

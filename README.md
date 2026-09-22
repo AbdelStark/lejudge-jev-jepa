@@ -41,7 +41,7 @@ No LLM runs in the loop and no text is generated. Every external response is cac
 | Latency | **2.5 s per 1,000 judgments**; 3–13 calls per episode with the step-fact memo |
 | Planning, Study 1 (random expert starts, λ = 1) | **null effect for every judge including the oracle**: in most violating episodes every candidate already violates from the start, or the goal itself is in the forbidden region |
 | Planning, Study 2 (relevance-filtered starts) | oracle and keyword judges cut violations by **8–14 points** on two of three sets (significant after Holm); gated Jev by 3–4 points; the spatial set is bounded by world-model drift |
-| Planning, Study 3 (gate off) | **Jev matches the oracle on `implicit` (−8 points vs LeWM, Holm p = 0.04)** and is within 6 points of it on `spatial+temporal`; the gain over gated Jev is not itself significant at n = 90 |
+| Planning, Study 3 (gate off) | **Jev matches the oracle on `implicit` (−8 points vs LeWM, Holm p = 0.04)** and is within 4.5 points of it on `spatial+temporal`; the gain over gated Jev is not itself significant at n = 90 |
 
 The Study 1 null result is, we think, the most useful thing in this repo: it was established with a *perfect* judge (the oracle checker run on probe words through the identical code path), so it separates what the judge can do from what the cost mechanics and the world model allow.
 
@@ -185,7 +185,7 @@ Pre-registered after Study 2; Jev only, same filtered episodes, τ ∈ {0.75, 1.
 | implicit — violation | 0.77 | 0.69 | 0.66 ★ | 0.73 | 0.77 | **0.69 ★** (−8 pts, Holm p = 0.04) |
 | success (both sets) | 0.68 | 0.66 | 0.70 | 0.73 | 0.67 | 0.68 |
 
-With the gate off, Jev reaches the oracle on `implicit` and sits within 6 points of it on `spatial+temporal`; the improvement over the gated variant is itself not significant at 90 episodes per cell. So the honest summary is: **Jev in the loop is as good as a perfect judge on these words would be, on the sets where the world model lets any judge matter, and the remaining gap to zero violations is the world model's, not Jev's.**
+With the gate off, Jev reaches the oracle on `implicit` and sits within 4.5 points of it on `spatial+temporal` (both inside the pre-registered 5-point tolerance); the improvement over the gated variant is itself not significant at 90 episodes per cell. Full hypothesis-by-hypothesis scoring is in the paper (Section 5.8). So the honest summary is: **Jev in the loop is as good as a perfect judge on these words would be, on the sets where the world model lets any judge matter, and the remaining gap to zero violations is the world model's, not Jev's.**
 
 <p align="center"><img src="docs/assets/study3_gate.png" width="75%"></p>
 
