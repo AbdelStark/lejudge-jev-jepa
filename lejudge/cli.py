@@ -82,6 +82,7 @@ def plan(
     paraphrase: str = "canonical",
     hard_reject: bool = False,
     unjudged: str = "mean",
+    start_filter: str = "none",
     tag: str = "",
     out: str = "artifacts/results/planning.parquet",
     live: bool = False,
@@ -101,7 +102,7 @@ def plan(
     for c in conds:
         for s in sets:
             for sd in seed_list:
-                cfg = RunConfig(condition=c, constraint_set=s, seed=sd, episodes=episodes, lam=lam, K=k, tau=tau, mode=mode, judge_last_n=judge_last_n, judge_every=judge_every, steps=steps, vocab=vocab, probes=probes, hard_reject=hard_reject, unjudged=unjudged, paraphrase=paraphrase, tag=tag, device=device, data_path=data, plan_overrides=overrides)
+                cfg = RunConfig(condition=c, constraint_set=s, seed=sd, episodes=episodes, lam=lam, K=k, tau=tau, mode=mode, judge_last_n=judge_last_n, judge_every=judge_every, steps=steps, vocab=vocab, probes=probes, hard_reject=hard_reject, unjudged=unjudged, start_filter=start_filter, paraphrase=paraphrase, tag=tag, device=device, data_path=data, plan_overrides=overrides)
                 df = runner.run(cfg)
                 append_results(df, out)
                 typer.echo(f"{c}/{s}/seed{sd}: success={df.success.mean():.3f} violation={df.violation.mean():.3f} n={len(df)} → {out}")

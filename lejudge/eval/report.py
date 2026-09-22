@@ -106,6 +106,7 @@ def fig_success_vs_violation(df: pd.DataFrame, out: Path) -> None:
 
 def fig_pareto(df: pd.DataFrame, out: Path) -> None:
     plt = _plt()
+    out.mkdir(parents=True, exist_ok=True)
     g = df[(df.condition == "jev") & (df.tag.astype(str).str.contains("lam_sweep") | (df.lam != 1.0))]
     base = df[(df.condition == "jev") & (df.lam == 1.0)]
     g = pd.concat([g, base])
@@ -278,6 +279,22 @@ def build_report(results: Path | str = RESULTS, out: Path | str = "paper/figures
         full = pd.concat([pdf, adf]) if adf is not None else pdf
         fig_pareto(full, out)
         summary["figures"].append("fig3_pareto_lambda")
+    fdf = pd.read_parquet(results / "planning_filtered.parquet") if (results / "planning_filtered.parquet").exists() else None
+    if fdf is not None and not fdf.empty:
+        t4 = planning_table(fdf)
+        t4.to_csv(out / "table4_planning_filtered.csv", index=False)
+        (out / "table4_planning_filtered.md").write_text(_md_table(t4))
+        summary["tables"]["planning_filtered"] = t4.to_dict(orient="records")
+        ft = pd.concat([paired_tests(fdf, ref="lewm", metric="violation"), paired_tests(fdf, ref="lewm", metric="success")])
+        ft.to_csv(out / "table4b_paired_tests_filtered.csv", index=False)
+        (out / "table4b_paired_tests_filtered.md").write_text(_md_table(ft, "{:.4f}"))
+        summary["tables"]["paired_tests_filtered"] = ft.to_dict(orient="records")
+        fig_success_vs_violation(fdf, out / "filtered")
+        summary["figures"].append("filtered/fig2_success_vs_violation")
+        afd = pd.read_parquet(results / "ablations_filtered.parquet") if (results / "ablations_filtered.parquet").exists() else None
+        if afd is not None and not afd.empty:
+            fig_pareto(pd.concat([fdf, afd]), out / "filtered")
+            summary["figures"].append("filtered/fig3_pareto_lambda")
     if adf is not None and not adf.empty:
         t3 = planning_table(adf.assign(condition=adf.condition + ":" + adf.tag.astype(str)))
         t3.to_csv(out / "table3_ablations.csv", index=False)
@@ -335,11 +352,13 @@ def annotate_satisfiable(df: pd.DataFrame, data_path: str = "artifacts/data/push
     cache: dict[tuple[int, int], tuple[GroundTruthState, GroundTruthState]] = {}
     flags = []
     for _, r in df.iterrows():
-        key = (int(r.seed), int(r.episode))
+        filt = str(r.get("start_filter", "none")) if "start_filter" in df.columns else "none"
+        key = (filt, str(r.constraint_set) if filt != "none" else "", int(r.seed), int(r.episode))
         if key not in cache:
-            n = int(df[df.seed == r.seed].episode.max()) + 1
-            for es in sample_episode_specs(data, n, int(r.seed), 25):
-                cache[(int(r.seed), es.episode)] = (GroundTruthState.from_env(es.state), GroundTruthState.from_env(es.goal_state))
+            sub = df[(df.seed == r.seed) & ((df.constraint_set == r.constraint_set) if filt != "none" else True)]
+            n = int(sub.episode.max()) + 1
+            for es in sample_episode_specs(data, n, int(r.seed), 25, start_filter=filt, constraint_set=str(r.constraint_set), vocab=vocab, lib=lib):
+                cache[(filt, key[1], int(r.seed), es.episode)] = (GroundTruthState.from_env(es.state), GroundTruthState.from_env(es.goal_state))
         s0, g = cache[key]
         ok = True
         for cid in lib.sets.get(str(r.constraint_set), ()):

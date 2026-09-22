@@ -80,6 +80,19 @@ def main() -> None:
         vals["llm_cond_note"] = ", LLM-small (subset)" if has_llm else ""
         vals["jev_model"] = str(p[p.condition == "jev"].response_model.replace("", pd.NA).dropna().iloc[0]) if (p.condition == "jev").any() and p[p.condition == "jev"].response_model.replace("", pd.NA).notna().any() else "[X]"
         tex_table(FIG / "table2_planning.csv", FIG / "table2_planning.tex", ["condition", "constraint_set", "n", "success", "success_lo", "success_hi", "violation", "violation_lo", "violation_hi", "plan_p50_s", "judge_calls_per_episode"])
+    # Study 2 (filtered starts)
+    if (RES / "planning_filtered.parquet").exists():
+        f = pd.read_parquet(RES / "planning_filtered.parquet")
+        for cond in ("lewm", "jev", "oracle", "keyword"):
+            g = f[f.condition == cond]
+            if len(g):
+                vals[f"{cond}_violation_filt_all"] = pct(g.violation.mean())
+                vals[f"{cond}_success_filt_all"] = pct(g.success.mean())
+            for cset, gg in g.groupby("constraint_set"):
+                key = str(cset).replace("+", "_")
+                vals[f"{cond}_violation_filt_{key}"] = pct(gg.violation.mean())
+                vals[f"{cond}_success_filt_{key}"] = pct(gg.success.mean())
+        tex_table(FIG / "table4_planning_filtered.csv", FIG / "table4_planning_filtered.tex", ["condition", "constraint_set", "n", "success", "success_lo", "success_hi", "violation", "violation_lo", "violation_hi", "plan_p50_s", "judge_calls_per_episode"])
     # judge-only
     if (RES / "judge_only.parquet").exists():
         j = pd.read_parquet(RES / "judge_only.parquet")

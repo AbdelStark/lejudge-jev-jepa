@@ -31,3 +31,13 @@ LeWM checkpoint `quentinll/lewm-pusht` revision `22b330c28c27ead4bfd1888615af134
 
 ## Amendments after the hash (logged in DECISIONS)
 - 2026-09-22: JevCost judges every candidate (step-level de-duplication and memo for hard families; K-shortlist with mean prior for soft families) on CEM iterations 0, 5, 10, 15, 20, 25 and 29 (`every_k`), replacing the K = 16 shortlist judged on the last 3 iterations. Reason: the oracle judge showed the original mechanism could not change plans. Seeds, episodes, sets, λ, τ and the analysis are unchanged.
+
+## Study 2 — relevance-filtered starts (pre-registered 2026-09-22, before any Study 2 run)
+
+**Motivation.** In Study 1 most violations were unavoidable from the start/goal pair (goal block in the centre cell, agent starting in contact), so all judges tied with unconstrained LeWM.
+
+**Start-state filter (dataset-only, identical for every condition).** A (start, goal) window with goal = start + 25 env steps is kept when the constraint set is (a) *satisfiable*: no constraint of the set is violated by the start state or the goal state (centre_avoid: neither block centroid in the centre cell; contact-based constraints: the agent is not touching the block at the start), and (b) *in tension*: the expert trajectory between start and goal violates at least one constraint of the set at the planner's cadence (centre_avoid: the block passes through the centre cell; no_contact_first3: the expert touches the block within the first 15 env steps; approach_below / gentle: the expert window fails the oracle). Windows are enumerated over the held-out episodes at stride 1 and drawn without replacement with `numpy.random.default_rng(10_000 + seed)`.
+
+**Design.** Same conditions {LeWM, oracle-on-probes, keyword, Jev}, sets {spatial, spatial+temporal, implicit}, seeds {0, 1, 2}, 30 episodes per cell, λ = 1, `every_k` schedule, population-wide JevCost, everything else as in Study 1. Exploratory: λ ∈ {0.25, 0.5, 2, 4} for Jev on the filtered spatial set, seed 0, 30 episodes.
+
+**Hypotheses.** H1′: oracle-on-probes reduces the episode violation rate relative to LeWM by at least 20 points on filtered starts. H2′: Jev is within 10 points of oracle-on-probes. H3′: success drops by at most 15 points for Jev relative to LeWM. Analysis identical to Study 1 (bootstrap CIs, paired Wilcoxon vs LeWM, Holm across sets, risk differences).

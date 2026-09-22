@@ -149,6 +149,7 @@ class PlanSpec:
     var_scale: float = 1.0
     seed: int = 1234
     device: str | None = None
+    select: str = "mean"  # "mean" (stable-worldmodel default) | "best" (lowest-cost sampled candidate)
     extra: dict[str, Any] = field(default_factory=dict)
 
     @classmethod
@@ -186,6 +187,8 @@ def make_policy(cost: Any, spec: PlanSpec, scaler: ActionScaler, callbacks: list
         warm_start=spec.warm_start,
     )
     tf = _tv_transform()
+    if spec.select == "best":
+        solver = BestSampleCEMSolver(solver)
     return swm.policy.WorldModelPolicy(solver=solver, config=config, process={"action": scaler}, transform={"pixels": tf, "goal": tf})
 
 
@@ -214,3 +217,68 @@ def _default(o: Any) -> Any:
     if hasattr(o, "to_json"):
         return o.to_json()
     raise TypeError(type(o).__name__)
+
+
+class _BestRecorder:
+    """CEM callback: remembers the lowest-cost sampled candidate of the last iteration."""
+
+    output_key = "best_sample"
+
+    def __init__(self) -> None:
+        self.best: Any = None
+        self.history: list = []
+
+    def reset(self) -> None:
+        self.best = None
+
+    def start_batch(self) -> None:
+        self.best = None
+
+    def __call__(self, **kw: Any) -> None:
+        cands, costs = kw["candidates"], kw["costs"]
+        idx = torch.argmin(costs, dim=1)
+        self.best = cands[torch.arange(cands.shape[0], device=cands.device), idx]  # (B, H, D)
+
+    def end_solve(self) -> None:
+        pass
+
+
+class BestSampleCEMSolver:
+    """CEM that executes the lowest-cost *sampled* candidate of the last iteration instead of the
+    elite mean. Averaging elites that pass a forbidden region on different sides produces a mean
+    plan that goes straight through it and was never judged; executing a judged sample avoids that.
+    Wraps ``stable_worldmodel.planning.CEMSolver`` and satisfies the ``Solver`` protocol.
+    """
+
+    def __init__(self, inner: Any) -> None:
+        self.inner = inner
+        self.recorder = _BestRecorder()
+        inner.callbacks.append(self.recorder)
+
+    def configure(self, **kw: Any) -> None:
+        self.inner.configure(**kw)
+
+    @property
+    def action_dim(self) -> int:
+        return self.inner.action_dim
+
+    @property
+    def n_envs(self) -> int:
+        return self.inner.n_envs
+
+    @property
+    def horizon(self) -> int:
+        return self.inner.horizon
+
+    def __getattr__(self, name: str) -> Any:
+        return getattr(self.inner, name)
+
+    def solve(self, info_dict: dict, init_action: Any = None) -> dict:
+        out = self.inner.solve(info_dict, init_action=init_action)
+        if self.recorder.best is not None:
+            out["mean_actions"] = out["actions"]
+            out["actions"] = self.recorder.best.detach().cpu().to(out["actions"].dtype)
+        return out
+
+    def __call__(self, *a: Any, **kw: Any) -> dict:
+        return self.solve(*a, **kw)
