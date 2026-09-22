@@ -76,8 +76,16 @@ def main() -> None:
             vals["probe_bucket_block_h5"] = num(c[-1]["bucket_accuracy"]["block"], 2)
             vals["probe_bucket_edge_h5"] = num(c[-1]["bucket_accuracy"]["block_edge"], 2)
             vals["probe_bucket_contact_h5"] = num(c[-1]["bucket_accuracy"]["contact"], 2)
+            vals["probe_bucket_agent_h5"] = num(c[-1]["bucket_accuracy"]["agent"], 2)
+            vals["probe_bucket_angle_h5"] = num(c[-1]["bucket_accuracy"]["block_angle"], 2)
+            accs = [c[-1]["bucket_accuracy"][k] for k in ("block", "block_edge", "block_angle", "agent", "contact")]
+            vals["probe_h5_min"] = num(min(accs), 2)
+            vals["probe_h5_max"] = num(max(accs), 2)
             vals["probe_block_err_h5_px"] = num(c[-1]["block_error_px"], 1)
             vals["probe_imagined_n"] = str(pm["imagined"]["n_starts"])
+        accs0 = [t["bucket_accuracy"][k] for k in ("block", "block_edge", "block_angle", "agent", "contact")]
+        vals["probe_h0_min"] = num(min(accs0), 2)
+        vals["probe_h0_max"] = num(max(accs0), 2)
     pmeta = json.loads((ROOT / "artifacts/probes/pusht/linear@1/meta.json").read_text())
     vals["probe_train_episodes"] = str(pmeta["dataset"]["episodes"])
     vals["probe_train_frames"] = str(pmeta["dataset"]["frames"])
@@ -149,6 +157,27 @@ def main() -> None:
             g = sat[(sat.condition == cond) & sat.satisfiable & (sat.constraint_set == "spatial")]
             vals[f"s1_{cond}_spatial_sat_viol_pct"] = pct(g.violation.mean()) if len(g) else "[X]"
         vals["s1_spatial_sat_n"] = str(int(sat[(sat.condition == "lewm") & (sat.constraint_set == "spatial")].satisfiable.sum()))
+        # goal-in-centre alone (the rest of the unsatisfiable episodes start in the centre)
+        from lejudge.eval.planning import sample_episode_specs
+        from lejudge.probes.data import EpisodeData
+        from lejudge.types import GroundTruthState
+        from lejudge.vocab import load_vocab
+
+        data = EpisodeData(str(ROOT / "artifacts/data/pusht_expert.npz"))
+        vocab = load_vocab("pusht@1")
+        gc, sc, tot = 0, 0, 0
+        for seed in sorted(frames["s1"].seed.unique()):
+            for es in sample_episode_specs(data, int(frames["s1"][frames["s1"].seed == seed].episode.max()) + 1, int(seed), 25):
+                g = GroundTruthState.from_env(es.goal_state)
+                s0 = GroundTruthState.from_env(es.state)
+                cell = lambda st: str(vocab.cell_name(vocab.block_centroid(np.array(st.block_xy), np.array(st.block_angle))))  # noqa: E731
+                gc += cell(g) == "centre"
+                sc += cell(s0) == "centre" and cell(g) != "centre"
+                tot += 1
+        vals["s1_spatial_goalcentre_pct"] = pct(gc / tot)
+        vals["s1_spatial_goalcentre_n"] = str(gc)
+        vals["s1_spatial_startcentre_n"] = str(sc)
+        vals["s1_spatial_total_n"] = str(tot)
     # ---- Study 3 ---------------------------------------------------------------------------
     if (RES / "planning_gate.parquet").exists() and "s2" in frames:
         g3 = pd.read_parquet(RES / "planning_gate.parquet")
@@ -247,6 +276,11 @@ def main() -> None:
         canon, para = g[g.variant == "canonical"], g[g.variant.str.startswith("p")]
         vals["jo_kw_pw_acc_pooled"] = num(prf(canon.label.to_numpy(), canon.score.to_numpy())["accuracy"], 2)
         vals["jo_kw_pw_para_pooled"] = num(prf(para.label.to_numpy(), para.score.to_numpy())["accuracy"], 2)
+        kw_drop = 100 * (prf(canon.label.to_numpy(), canon.score.to_numpy())["accuracy"] - prf(para.label.to_numpy(), para.score.to_numpy())["accuracy"])
+        vals["jo_kw_drop_pts"] = f"{kw_drop:.0f}"
+        gj = j[(j.judge == "jev") & (j.description == "probe-words") & (j.repeat == 0)]
+        jd = 100 * (prf(gj[gj.variant == "canonical"].label.to_numpy(), gj[gj.variant == "canonical"].score.to_numpy())["accuracy"] - prf(gj[gj.variant.str.startswith("p")].label.to_numpy(), gj[gj.variant.str.startswith("p")].score.to_numpy())["accuracy"])
+        vals["jo_jev_drop_pts"] = f"{jd:.0f}"
         lj = j[j.judge.astype(str).str.startswith("llm")]
         if len(lj):
             ok = lj[~lj.failed]
@@ -316,12 +350,18 @@ def write_planning_table(t: pd.DataFrame, out: Path, raw: pd.DataFrame, conds: l
 def write_ablation_table(ta: pd.DataFrame, out: Path) -> None:
     names = {"lam_sweep_0.25": "$\\lambda=0.25$", "lam_sweep_0.5": "$\\lambda=0.5$", "lam_sweep_2": "$\\lambda=2$", "lam_sweep_4": "$\\lambda=4$", "K4": "$K=4$ (soft shortlist)", "K32": "$K=32$", "K64": "$K=64$", "K32_lam4": "$K=32$, $\\lambda=4$", "final_only": "judge final iteration only", "last_n3": "judge last 3 iterations", "per_iter": "judge every iteration", "unjudged_none": "no prior for unjudged (RFC draft)", "vocab_pusht2": "vocabulary $4\\times4$ (pusht@2)", "steps_half": "judge first 2 of 5 steps", "hard_reject": "hard rejection ($+\\infty$ if $p>0.7$)", "mlp_probe": "MLP probe"}
     order = ["lam_sweep_0.25", "lam_sweep_0.5", "lam_sweep_2", "lam_sweep_4", "K4", "K32", "K64", "K32_lam4", "final_only", "last_n3", "per_iter", "unjudged_none", "vocab_pusht2", "steps_half", "hard_reject", "mlp_probe"]
-    lines = ["\\begin{tabular}{lccccc}", "\\toprule", "variant & $n$ & violation & success & Jev calls / ep & held \\\\", "\\midrule"]
+    lines = ["\\begin{tabular}{lccccc}", "\\toprule", "variant & $n$ & violation [95\\% CI] & success [95\\% CI] & Jev calls / ep & held \\\\", "\\midrule"]
+    from lejudge.eval.stats import bootstrap_ci
+
+    raw = pd.read_parquet(RES / "ablations.parquet")
     for tag in order:
         r = ta[ta.tag == tag]
         if len(r):
             r = r.iloc[0]
-            lines.append(f"{names.get(tag, _esc(tag))} & {int(r.n)} & {r.violation:.2f} & {r.success:.2f} & {r.calls:.1f} & {100 * r.held:.0f}\\% \\\\")
+            g = raw[raw.tag == tag]
+            v = bootstrap_ci(g.violation.to_numpy(dtype=float))
+            sc = bootstrap_ci(g.success.to_numpy(dtype=float))
+            lines.append(f"{names.get(tag, _esc(tag))} & {int(r.n)} & {v[0]:.2f} {{\\scriptsize[{v[1]:.2f}, {v[2]:.2f}]}} & {sc[0]:.2f} {{\\scriptsize[{sc[1]:.2f}, {sc[2]:.2f}]}} & {r.calls:.1f} & {100 * r.held:.0f}\\% \\\\")
     lines += ["\\bottomrule", "\\end{tabular}"]
     out.write_text("\n".join(lines))
 
