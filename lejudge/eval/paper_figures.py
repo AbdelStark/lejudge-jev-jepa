@@ -11,14 +11,41 @@ from lejudge.eval.report import PALETTE, _plt, planning_table
 from lejudge.eval.stats import bootstrap_ci
 
 COND_ORDER = ["lewm", "keyword", "oracle", "jev", "jev:tau0.75", "jev:tau1.0"]
-COND_LABEL = {"lewm": "LeWM (no constraint)", "keyword": "keyword checker", "oracle": "oracle-on-probes", "jev": "LeJudge / Jev (τ=0.5)", "jev:tau0.75": "Jev τ=0.75", "jev:tau1.0": "Jev, gate off (τ=1)"}
+COND_LABEL = {
+    "lewm": "LeWM (no constraint)",
+    "keyword": "keyword checker",
+    "oracle": "oracle-on-probes",
+    "jev": "LeJudge / Jev (τ=0.5)",
+    "jev:tau0.75": "Jev τ=0.75",
+    "jev:tau1.0": "Jev, gate off (τ=1)",
+}
 SET_LABEL = {"spatial": "spatial", "spatial+temporal": "spatial + temporal", "implicit": "implicit"}
-MARK = {"lewm": "s", "keyword": "D", "oracle": "o", "jev": "*", "jev:tau0.75": "^", "jev:tau1.0": "P"}
+MARK = {
+    "lewm": "s",
+    "keyword": "D",
+    "oracle": "o",
+    "jev": "*",
+    "jev:tau0.75": "^",
+    "jev:tau1.0": "P",
+}
 
 
 def _style():
     plt = _plt()
-    plt.rcParams.update({"font.family": "DejaVu Sans", "font.size": 8, "axes.titlesize": 9, "axes.labelsize": 8, "legend.fontsize": 7, "xtick.labelsize": 7, "ytick.labelsize": 7, "axes.grid": True, "grid.alpha": 0.25, "grid.linewidth": 0.5})
+    plt.rcParams.update(
+        {
+            "font.family": "DejaVu Sans",
+            "font.size": 8,
+            "axes.titlesize": 9,
+            "axes.labelsize": 8,
+            "legend.fontsize": 7,
+            "xtick.labelsize": 7,
+            "ytick.labelsize": 7,
+            "axes.grid": True,
+            "grid.alpha": 0.25,
+            "grid.linewidth": 0.5,
+        }
+    )
     return plt
 
 
@@ -31,7 +58,13 @@ def _color(cond: str) -> str:
     return PALETTE.get(base, "k")
 
 
-def fig_forest(study_frames: dict[str, pd.DataFrame], out: Path, name: str = "fig_planning_forest", xlim_v: tuple[float, float] = (0.3, 1.0), xlim_s: tuple[float, float] = (0.4, 1.0)) -> None:
+def fig_forest(
+    study_frames: dict[str, pd.DataFrame],
+    out: Path,
+    name: str = "fig_planning_forest",
+    xlim_v: tuple[float, float] = (0.3, 1.0),
+    xlim_s: tuple[float, float] = (0.4, 1.0),
+) -> None:
     """Violation and success per condition, one row block per (study, set), zoomed axes with CIs."""
     plt = _style()
     blocks = []
@@ -41,7 +74,9 @@ def fig_forest(study_frames: dict[str, pd.DataFrame], out: Path, name: str = "fi
             g = t[t.constraint_set == cset]
             if len(g):
                 blocks.append((study, cset, g))
-    fig, axes = plt.subplots(1, 2, figsize=(7.0, 0.3 * sum(len(b[2]) + 1.0 for b in blocks) + 0.7), sharey=True)
+    fig, axes = plt.subplots(
+        1, 2, figsize=(7.0, 0.22 * sum(len(b[2]) + 1.0 for b in blocks) + 0.7), sharey=True
+    )
     yticks, ylabels, y = [], [], 0
     for study, cset, g in blocks:
         y -= 0.7
@@ -55,10 +90,24 @@ def fig_forest(study_frames: dict[str, pd.DataFrame], out: Path, name: str = "fi
             yticks.append(y)
             ylabels.append("    " + COND_LABEL.get(cond, cond))
             for ax, m in zip(axes, ("violation", "success")):
-                ax.errorbar(r[m], y, xerr=[[r[m] - r[f"{m}_lo"]], [r[f"{m}_hi"] - r[m]]], fmt=MARK.get(cond, "o"), ms=5 if cond != "jev" else 8, color=_color(cond), capsize=2, lw=1)
+                ax.errorbar(
+                    r[m],
+                    y,
+                    xerr=[[r[m] - r[f"{m}_lo"]], [r[f"{m}_hi"] - r[m]]],
+                    fmt=MARK.get(cond, "o"),
+                    ms=5 if cond != "jev" else 8,
+                    color=_color(cond),
+                    capsize=2,
+                    lw=1,
+                )
                 if cond == "lewm":
                     ax.plot([r[m], r[m]], [y - len(g) + 0.5, y + 0.5], color="#888", lw=0.7, ls=":")
-    for ax, title, xl, xl_lim in zip(axes, ("Episode violation rate (lower is better)", "Success rate (higher is better)"), ("violation rate", "success rate"), (xlim_v, xlim_s)):
+    for ax, title, xl, xl_lim in zip(
+        axes,
+        ("Episode violation rate (lower is better)", "Success rate (higher is better)"),
+        ("violation rate", "success rate"),
+        (xlim_v, xlim_s),
+    ):
         ax.set_title(title)
         ax.set_xlabel(xl)
         ax.set_xlim(*xl_lim)
@@ -90,7 +139,15 @@ def fig_lambda(sweeps: dict[str, pd.DataFrame], out: Path) -> None:
             m = np.array([r[k] for r in rows])
             lo = np.array([r[k + 1] for r in rows])
             hi = np.array([r[k + 2] for r in rows])
-            ax.errorbar(lam, m, yerr=[m - lo, hi - m], fmt="o-", capsize=2, ms=4, label=f"{name} (n={rows[0][-1]}/λ)")
+            ax.errorbar(
+                lam,
+                m,
+                yerr=[m - lo, hi - m],
+                fmt="o-",
+                capsize=2,
+                ms=4,
+                label=f"{name} (n={rows[0][-1]}/λ)",
+            )
             ax.set_ylabel(f"episode {lab} rate")
     for ax in axes:
         ax.set_xscale("log")
@@ -113,20 +170,38 @@ def fig_heatmap(jdf: pd.DataFrame, out: Path) -> None:
     t = per_constraint_table(jdf[jdf.description == "probe-words"])
     judges = [j for j in ("jev", "keyword", "oracle") if j in set(t.judge)]
     variants = ["canonical", "p1", "p2", "p3", "p4", "p5", "n1", "n2"]
-    order = t[(t.judge == "jev") & (t.variant == "canonical")].sort_values("accuracy", ascending=False).constraint.tolist()
+    order = (
+        t[(t.judge == "jev") & (t.variant == "canonical")]
+        .sort_values("accuracy", ascending=False)
+        .constraint.tolist()
+    )
     fig, axes = plt.subplots(1, len(judges), figsize=(2.3 * len(judges) + 1.2, 3.6), squeeze=False)
     for ax, j in zip(axes[0], judges):
-        g = t[t.judge == j].pivot_table(index="constraint", columns="variant", values="accuracy").reindex(index=order, columns=variants)
+        g = (
+            t[t.judge == j]
+            .pivot_table(index="constraint", columns="variant", values="accuracy")
+            .reindex(index=order, columns=variants)
+        )
         arr = g.to_numpy(dtype=float)
         im = ax.imshow(arr, vmin=0, vmax=1, cmap="viridis", aspect="auto")
         for (i, k), v in np.ndenumerate(arr):
             if not np.isnan(v):
-                ax.text(k, i, f"{v:.2f}"[1:] if v < 1 else "1.0", ha="center", va="center", fontsize=5.2, color="white" if v < 0.6 else "black")
+                ax.text(
+                    k,
+                    i,
+                    f"{v:.2f}"[1:] if v < 1 else "1.0",
+                    ha="center",
+                    va="center",
+                    fontsize=5.2,
+                    color="white" if v < 0.6 else "black",
+                )
         ax.set_xticks(range(len(variants)))
         ax.set_xticklabels(["canon", "p1", "p2", "p3", "p4", "p5", "n1", "n2"], rotation=60)
         ax.set_yticks(range(len(order)))
         ax.set_yticklabels([o.replace("_", " ") for o in order] if ax is axes[0][0] else [])
-        ax.set_title({"jev": "LeJudge / Jev", "keyword": "keyword checker", "oracle": "oracle-on-probes"}[j])
+        ax.set_title(
+            {"jev": "LeJudge / Jev", "keyword": "keyword checker", "oracle": "oracle-on-probes"}[j]
+        )
         ax.grid(False)
         ax.axvline(0.5, color="white", lw=1)
         ax.axvline(5.5, color="white", lw=1)
@@ -141,13 +216,34 @@ def fig_reliability(jdf: pd.DataFrame, out: Path) -> None:
     from lejudge.eval.stats import ece
 
     fig, axes = plt.subplots(1, 3, figsize=(7.0, 2.4))
-    for ax, (j, src) in zip(axes, (("jev", "imagined"), ("jev", "executed"), ("keyword", "imagined"))):
-        g = jdf[(jdf.judge == j) & (jdf.source == src) & (jdf.description == "probe-words") & (jdf.repeat == 0) & (jdf.variant == "canonical")]
+    for ax, (j, src) in zip(
+        axes, (("jev", "imagined"), ("jev", "executed"), ("keyword", "imagined"))
+    ):
+        g = jdf[
+            (jdf.judge == j)
+            & (jdf.source == src)
+            & (jdf.description == "probe-words")
+            & (jdf.repeat == 0)
+            & (jdf.variant == "canonical")
+        ]
         e, table = ece(g.label.to_numpy(), g.score.to_numpy())
         if table:
-            ax.plot([r["confidence"] for r in table], [r["accuracy"] for r in table], "o-", color=_color(j), ms=4)
+            ax.plot(
+                [r["confidence"] for r in table],
+                [r["accuracy"] for r in table],
+                "o-",
+                color=_color(j),
+                ms=4,
+            )
             for r in table:
-                ax.annotate(str(r["n"]), (r["confidence"], r["accuracy"]), fontsize=5, xytext=(3, -8), textcoords="offset points", color="#666")
+                ax.annotate(
+                    str(r["n"]),
+                    (r["confidence"], r["accuracy"]),
+                    fontsize=5,
+                    xytext=(3, -8),
+                    textcoords="offset points",
+                    color="#666",
+                )
         ax.plot([0, 1], [0, 1], "--", color="#999", lw=0.8)
         ax.set_title(f"{COND_LABEL.get(j, j).split(' (')[0]}, {src} items\nECE = {e:.3f}")
         ax.set_xlabel("mean judge score in bin")
@@ -167,12 +263,20 @@ def fig_decomposition(probes_meta: dict | None, diag: pd.DataFrame | None, out: 
     if probes_meta and "imagined" in probes_meta:
         curve = probes_meta["imagined"]["curve"]
         hs = [r["h"] for r in curve]
-        for field, lab in (("block", "block cell"), ("block_edge", "block edge"), ("block_angle", "angle bin"), ("agent", "agent cell"), ("contact", "contact")):
+        for field, lab in (
+            ("block", "block cell"),
+            ("block_edge", "block edge"),
+            ("block_angle", "angle bin"),
+            ("agent", "agent cell"),
+            ("contact", "contact"),
+        ):
             ax.plot(hs, [r["bucket_accuracy"][field] for r in curve], "o-", ms=3, label=lab)
         ax.set_xlabel("imagined step h (0 = encoded frame)")
         ax.set_ylabel("word accuracy vs ground truth")
         ax.set_ylim(0.5, 1.02)
-        ax.set_title(f"(a) Probe words along imagined rollouts (n={probes_meta['imagined']['n_starts']})")
+        ax.set_title(
+            f"(a) Probe words along imagined rollouts (n={probes_meta['imagined']['n_starts']})"
+        )
         ax.legend(ncol=2, loc="lower left")
     ax = axes[1]
     if diag is not None and not diag.empty:
@@ -180,15 +284,37 @@ def fig_decomposition(probes_meta: dict | None, diag: pd.DataFrame | None, out: 
         sets = ["spatial", "spatial+temporal", "implicit"]
         x = np.arange(len(sets))
         wdt = 0.2
-        for i, (cond, key, lab, col, hatch) in enumerate([("oracle", "imagined_violation", "oracle: imagined", "#1b9e77", ""), ("oracle", "executed_violation", "oracle: executed", "#1b9e77", "//"), ("jev", "imagined_violation", "Jev: imagined", "#7570b3", ""), ("jev", "executed_violation", "Jev: executed", "#7570b3", "//")]):
-            vals = [float(d[(d.condition == cond) & (d.constraint_set == s)][key].iloc[0]) if len(d[(d.condition == cond) & (d.constraint_set == s)]) else np.nan for s in sets]
-            ax.bar(x + (i - 1.5) * wdt, vals, wdt, color=col, alpha=0.55 if not hatch else 1.0, hatch=hatch, edgecolor="white", label=lab)
+        for i, (cond, key, lab, col, hatch) in enumerate(
+            [
+                ("oracle", "imagined_violation", "oracle: imagined", "#1b9e77", ""),
+                ("oracle", "executed_violation", "oracle: executed", "#1b9e77", "//"),
+                ("jev", "imagined_violation", "Jev: imagined", "#7570b3", ""),
+                ("jev", "executed_violation", "Jev: executed", "#7570b3", "//"),
+            ]
+        ):
+            vals = [
+                float(d[(d.condition == cond) & (d.constraint_set == s)][key].iloc[0])
+                if len(d[(d.condition == cond) & (d.constraint_set == s)])
+                else np.nan
+                for s in sets
+            ]
+            ax.bar(
+                x + (i - 1.5) * wdt,
+                vals,
+                wdt,
+                color=col,
+                alpha=0.55 if not hatch else 1.0,
+                hatch=hatch,
+                edgecolor="white",
+                label=lab,
+            )
         ax.set_xticks(x)
         ax.set_xticklabels([SET_LABEL[s] for s in sets])
         ax.set_ylabel("fraction of episodes")
-        ax.set_ylim(0, 1)
+        ax.set_ylim(0, 1.3)  # headroom for the legend above the bars
+        ax.set_yticks(np.linspace(0, 1, 6))
         ax.set_title("(b) Chosen plan: imagined vs executed violation")
-        ax.legend(ncol=2, loc="upper left")
+        ax.legend(ncol=2, loc="upper center", frameon=False)
     fig.tight_layout()
     fig.savefig(out / "fig_decomposition.pdf")
     fig.savefig(out / "fig_decomposition.png", dpi=200)
@@ -229,7 +355,14 @@ def fig_latency_accuracy(jdf: pd.DataFrame, out: Path) -> None:
             if sub.empty:
                 continue
             acc = prf(sub.label.to_numpy(), sub.score.to_numpy())["accuracy"]
-            ax.scatter(lat, acc, marker=mk, s=45, color=_color(j), label=f"{COND_LABEL.get(j, j).split(' (')[0] if j != 'llm' else 'local LLM (7B)'} – {lab}")
+            ax.scatter(
+                lat,
+                acc,
+                marker=mk,
+                s=45,
+                color=_color(j),
+                label=f"{COND_LABEL.get(j, j).split(' (')[0] if j != 'llm' else 'local LLM (7B)'} – {lab}",
+            )
     ax.set_xscale("log")
     ax.set_xlabel("wall-clock seconds per 1,000 judgments (log)")
     ax.set_ylabel("accuracy at 0.5")
@@ -242,15 +375,27 @@ def fig_latency_accuracy(jdf: pd.DataFrame, out: Path) -> None:
     plt.close(fig)
 
 
-def build_paper_figures(results: Path | str = "artifacts/results", out: Path | str = "paper/figures/paper", probes_meta_path: Path | str = "artifacts/probes/pusht/linear@1/meta.json") -> list[str]:
+def build_paper_figures(
+    results: Path | str = "artifacts/results",
+    out: Path | str = "paper/figures/paper",
+    probes_meta_path: Path | str = "artifacts/probes/pusht/linear@1/meta.json",
+) -> list[str]:
     import json
 
-    from lejudge.eval.diagnostics import imagined_vs_executed, penalised_fraction_curve
+    from lejudge.eval.diagnostics import (
+        cached_summary,
+        imagined_vs_executed,
+        penalised_fraction_curve,
+    )
 
     results, out = Path(results), Path(out)
     out.mkdir(parents=True, exist_ok=True)
     rd = lambda n: pd.read_parquet(results / n) if (results / n).exists() else None  # noqa: E731
-    p1, p2, p3 = rd("planning.parquet"), rd("planning_filtered.parquet"), rd("planning_gate.parquet")
+    p1, p2, p3 = (
+        rd("planning.parquet"),
+        rd("planning_filtered.parquet"),
+        rd("planning_gate.parquet"),
+    )
     frames = {}
     if p1 is not None:
         frames["Study 1"] = p1
@@ -269,15 +414,34 @@ def build_paper_figures(results: Path | str = "artifacts/results", out: Path | s
         f2 = {"Study 2": frames["Study 2"]}
         if "Study 3" in frames:  # merge τ variants into the filtered-start figure
             g = frames["Study 3"]
-            f2 = {"Study 2/3": pd.concat([frames["Study 2"][~frames["Study 2"].constraint_set.isin(g.constraint_set.unique())], g])}
+            f2 = {
+                "Study 2/3": pd.concat(
+                    [
+                        frames["Study 2"][
+                            ~frames["Study 2"].constraint_set.isin(g.constraint_set.unique())
+                        ],
+                        g,
+                    ]
+                )
+            }
         fig_forest(f2, out, "fig_forest_study2")
         done.append("fig_forest_study2")
     a1, a2 = rd("ablations.parquet"), rd("ablations_filtered.parquet")
     sweeps = {}
     if a1 is not None and p1 is not None:
-        sweeps["Study 1 starts"] = pd.concat([a1[a1.tag.str.startswith("lam_sweep")], p1[(p1.condition == "jev") & (p1.constraint_set == "spatial") & (p1.seed == 0)]])
+        sweeps["Study 1 starts"] = pd.concat(
+            [
+                a1[a1.tag.str.startswith("lam_sweep")],
+                p1[(p1.condition == "jev") & (p1.constraint_set == "spatial") & (p1.seed == 0)],
+            ]
+        )
     if a2 is not None and p2 is not None:
-        sweeps["Study 2 (filtered) starts"] = pd.concat([a2[a2.tag.str.startswith("lam_sweep")], p2[(p2.condition == "jev") & (p2.constraint_set == "spatial") & (p2.seed == 0)]])
+        sweeps["Study 2 (filtered) starts"] = pd.concat(
+            [
+                a2[a2.tag.str.startswith("lam_sweep")],
+                p2[(p2.condition == "jev") & (p2.constraint_set == "spatial") & (p2.seed == 0)],
+            ]
+        )
     if sweeps:
         fig_lambda(sweeps, out)
         done.append("fig_lambda")
@@ -287,16 +451,20 @@ def build_paper_figures(results: Path | str = "artifacts/results", out: Path | s
         fig_reliability(jdf, out)
         fig_latency_accuracy(jdf, out)
         done += ["fig_paraphrase_heatmap", "fig_reliability", "fig_latency_accuracy"]
-    meta = json.loads(Path(probes_meta_path).read_text()) if Path(probes_meta_path).exists() else None
-    diag = imagined_vs_executed(results)
+    meta = (
+        json.loads(Path(probes_meta_path).read_text()) if Path(probes_meta_path).exists() else None
+    )
+    diag = cached_summary(
+        lambda: imagined_vs_executed(results), results / "trace_imagined_vs_executed.csv"
+    )
     diag.to_csv(out / "table_imagined_vs_executed.csv", index=False)
     fig_decomposition(meta, diag, out)
     done.append("fig_decomposition")
-    try:
-        curve = penalised_fraction_curve(results)
+    if (results / "planning_filtered.parquet").exists():
+        curve = cached_summary(
+            lambda: penalised_fraction_curve(results), results / "trace_penalised_fraction.csv"
+        )
         curve.to_csv(out / "table_penalised_fraction.csv", index=False)
         fig_penalised_fraction(curve, out)
         done.append("fig_penalised_fraction")
-    except FileNotFoundError:
-        pass
     return done

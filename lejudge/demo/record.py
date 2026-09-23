@@ -33,7 +33,9 @@ def _hold(frames: list[np.ndarray], seconds: float) -> list[np.ndarray]:
     return [frames[-1]] * int(seconds * FPS)
 
 
-def record_clip(out: str = "artifacts/demo/clip.mp4", seed: int = 0, backend: DemoBackend | None = None) -> str:
+def record_clip(
+    out: str = "artifacts/demo/clip.mp4", seed: int = 0, backend: DemoBackend | None = None
+) -> str:
     import imageio
 
     backend = backend or DemoBackend()
@@ -46,17 +48,51 @@ def record_clip(out: str = "artifacts/demo/clip.mp4", seed: int = 0, backend: De
     (stock, ours) = pairs[0]
     n = max(len(stock.frames), len(ours.frames))
     for i in range(n):
-        frames.append(_compose(stock.frames[min(i, len(stock.frames) - 1)], stock.frames[min(i, len(stock.frames) - 1)], ["LeWorldModel plans toward the goal image.", "No constraint.", ""]))
+        frames.append(
+            _compose(
+                stock.frames[min(i, len(stock.frames) - 1)],
+                stock.frames[min(i, len(stock.frames) - 1)],
+                ["LeWorldModel plans toward the goal image.", "No constraint.", ""],
+            )
+        )
     frames += _hold(frames, 1.0)
     for i in range(n):
-        frames.append(_compose(stock.frames[min(i, len(stock.frames) - 1)], ours.frames[min(i, len(ours.frames) - 1)], [f'Constraint: "{first}"', f"stock: violation={stock.oracle.get(first)}   LeJudge: violation={ours.oracle.get(first)}", "Jev judges words from probes; code adds the penalty."]))
+        frames.append(
+            _compose(
+                stock.frames[min(i, len(stock.frames) - 1)],
+                ours.frames[min(i, len(ours.frames) - 1)],
+                [
+                    f'Constraint: "{first}"',
+                    f"stock: violation={stock.oracle.get(first)}   LeJudge: violation={ours.oracle.get(first)}",
+                    "Jev judges words from probes; code adds the penalty.",
+                ],
+            )
+        )
     frames += _hold(frames, 1.0)
     (stock2, ours2) = pairs[1]
     n2 = max(len(stock2.frames), len(ours2.frames))
     for i in range(n2):
-        frames.append(_compose(stock2.frames[min(i, len(stock2.frames) - 1)], ours2.frames[min(i, len(ours2.frames) - 1)], [f'Edit the sentence: "{second}"', f"stock: violation={stock2.oracle.get(second)}   LeJudge: violation={ours2.oracle.get(second)}", "Same planner, same goal; only the sentence changed."]))
+        frames.append(
+            _compose(
+                stock2.frames[min(i, len(stock2.frames) - 1)],
+                ours2.frames[min(i, len(ours2.frames) - 1)],
+                [
+                    f'Edit the sentence: "{second}"',
+                    f"stock: violation={stock2.oracle.get(second)}   LeJudge: violation={ours2.oracle.get(second)}",
+                    "Same planner, same goal; only the sentence changed.",
+                ],
+            )
+        )
     frames += _hold(frames, 1.0)
-    end = _compose(np.full((224, 224, 3), 255, np.uint8), np.full((224, 224, 3), 255, np.uint8), ["LeJudge — a cost module you program in English", "LeWM + probes + Jev (TypeSafe System One)", "github: lejudge"])
+    end = _compose(
+        np.full((224, 224, 3), 255, np.uint8),
+        np.full((224, 224, 3), 255, np.uint8),
+        [
+            "LeJudge — a cost module you program in English",
+            "LeWM + probes + Jev (TypeSafe System One)",
+            "github: lejudge",
+        ],
+    )
     frames += [end] * (2 * FPS)
     target = 20 * FPS
     if len(frames) > target:

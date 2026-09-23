@@ -1,7 +1,7 @@
 [project]
 name = "lejudge"
 version = "0.1.0"
-description = "LeJudge: a natural-language cost module for JEPA world-model planning (LeWM + Jev)"
+description = "Natural-language constraints for JEPA world-model planning, judged by a decision model (LeWM + Jev)"
 readme = "README.md"
 requires-python = ">=3.10"
 license = { text = "MIT" }
@@ -26,6 +26,10 @@ dependencies = [
   "opencv-python-headless",
   "imageio[ffmpeg]",
 ]
+
+[project.urls]
+Repository = "https://github.com/AbdelStark/lejudge-jev-jepa"
+Paper = "https://github.com/AbdelStark/lejudge-jev-jepa/blob/main/paper/main.filled.pdf"
 
 [project.optional-dependencies]
 llm = ["openai"]

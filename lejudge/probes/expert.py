@@ -55,7 +55,11 @@ def renderer_check(f: Any, n_frames: int = 8, seed: int = 0) -> dict[str, float]
     world.close()
     pix = np.asarray(f["pixels"][idx]).astype(np.float64)
     mad = [float(np.abs(a - b).mean()) for a, b in zip(diffs, pix)]
-    return {"mean_abs_diff": float(np.mean(mad)), "max_frame_mad": float(np.max(mad)), "frames": n_frames}
+    return {
+        "mean_abs_diff": float(np.mean(mad)),
+        "max_frame_mad": float(np.max(mad)),
+        "frames": n_frames,
+    }
 
 
 def build(
@@ -82,13 +86,19 @@ def build(
     uniq, starts, counts = np.unique(ep_idx, return_index=True, return_counts=True)
     order = np.argsort(starts)
     uniq, starts, counts = uniq[order], starts[order], counts[order]
-    keep = [(int(e), int(s), int(c)) for e, s, c in zip(uniq, starts, counts) if c >= min_len and s + c <= n_ok and step_idx[s] == 0]
+    keep = [
+        (int(e), int(s), int(c))
+        for e, s, c in zip(uniq, starts, counts)
+        if c >= min_len and s + c <= n_ok and step_idx[s] == 0
+    ]
     keep = keep[: episodes + 1]
     if keep and keep[-1][1] + keep[-1][2] >= n_ok:
         keep = keep[:-1]
     keep = keep[:episodes]
     model = model or load_lewm(device)
-    parts: dict[str, list[np.ndarray]] = {k: [] for k in ("emb", "state", "action", "episode_idx", "step_idx", "seed")}
+    parts: dict[str, list[np.ndarray]] = {
+        k: [] for k in ("emb", "state", "action", "episode_idx", "step_idx", "seed")
+    }
     rows = 0
     for i, (e, s, c) in enumerate(keep):
         pix = np.asarray(f["pixels"][s : s + c])
@@ -104,7 +114,10 @@ def build(
         parts["seed"].append(np.full(c, e, dtype=np.int64))
         rows += c
         if progress and (i + 1) % 50 == 0:
-            print(f"[expert] {i + 1}/{len(keep)} episodes, {rows} frames, {time.time() - t0:.0f}s", flush=True)
+            print(
+                f"[expert] {i + 1}/{len(keep)} episodes, {rows} frames, {time.time() - t0:.0f}s",
+                flush=True,
+            )
     flat = {k: np.concatenate(v, 0) for k, v in parts.items()}
     path = out_dir / f"{name}.npz"
     np.savez_compressed(path, **flat)

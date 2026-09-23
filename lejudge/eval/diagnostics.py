@@ -1,8 +1,14 @@
-"""Trace-level diagnostics for the paper: imagined vs executed violations and gate statistics."""
+"""Trace-level diagnostics for the paper: imagined vs executed violations and gate statistics.
+
+Per-episode traces (``artifacts/traces/<run>/ep_*.jsonl``, ~0.8 GB) are not committed. Their
+summaries are: ``cached_summary`` recomputes a summary when the traces are present and otherwise
+reads the committed copy in ``artifacts/results/``, so the paper builds on a clean clone.
+"""
 
 from __future__ import annotations
 
 import glob
+from collections.abc import Callable
 from pathlib import Path
 
 import numpy as np
@@ -11,7 +17,15 @@ import pandas as pd
 from lejudge.judge import TraceWriter
 
 
-def imagined_vs_executed(results: Path | str = "artifacts/results", traces: Path | str = "artifacts/traces", tables: tuple[str, ...] = ("planning_filtered.parquet", "planning_gate.parquet", "planning.parquet")) -> pd.DataFrame:
+def imagined_vs_executed(
+    results: Path | str = "artifacts/results",
+    traces: Path | str = "artifacts/traces",
+    tables: tuple[str, ...] = (
+        "planning_filtered.parquet",
+        "planning_gate.parquet",
+        "planning.parquet",
+    ),
+) -> pd.DataFrame:
     """Per (table, condition, set): fraction of episodes whose chosen plan was *imagined* to violate
     (penalty of the lowest-cost elite at the last judged iteration of the first replan > 0.5)
     against the fraction that violated in *execution* (oracle on executed states)."""
@@ -46,26 +60,47 @@ def imagined_vs_executed(results: Path | str = "artifacts/results", traces: Path
             if not imag:
                 continue
             n = len(imag)
-            rows.append({
-                "table": tname.replace(".parquet", ""),
-                "condition": cond,
-                "constraint_set": cset,
-                "tau": tau,
-                "seed": int(g.seed.iloc[0]),
-                "n": n,
-                "imagined_violation": float(np.mean(imag)),
-                "executed_violation": float(np.mean(execd)),
-                "executed_given_imagined_clean": float(np.mean([e for i, e in both if not i])) if any(not i for i, _ in both) else float("nan"),
-                "executed_given_imagined_violating": float(np.mean([e for i, e in both if i])) if any(i for i, _ in both) else float("nan"),
-            })
+            rows.append(
+                {
+                    "table": tname.replace(".parquet", ""),
+                    "condition": cond,
+                    "constraint_set": cset,
+                    "tau": tau,
+                    "seed": int(g.seed.iloc[0]),
+                    "n": n,
+                    "imagined_violation": float(np.mean(imag)),
+                    "executed_violation": float(np.mean(execd)),
+                    "executed_given_imagined_clean": float(np.mean([e for i, e in both if not i]))
+                    if any(not i for i, _ in both)
+                    else float("nan"),
+                    "executed_given_imagined_violating": float(np.mean([e for i, e in both if i]))
+                    if any(i for i, _ in both)
+                    else float("nan"),
+                }
+            )
     out = pd.DataFrame(rows)
     if out.empty:
         return out
-    agg = out.groupby(["table", "condition", "constraint_set", "tau"], dropna=False).agg(n=("n", "sum"), imagined_violation=("imagined_violation", "mean"), executed_violation=("executed_violation", "mean"), executed_given_imagined_clean=("executed_given_imagined_clean", "mean"), executed_given_imagined_violating=("executed_given_imagined_violating", "mean")).reset_index()
+    agg = (
+        out.groupby(["table", "condition", "constraint_set", "tau"], dropna=False)
+        .agg(
+            n=("n", "sum"),
+            imagined_violation=("imagined_violation", "mean"),
+            executed_violation=("executed_violation", "mean"),
+            executed_given_imagined_clean=("executed_given_imagined_clean", "mean"),
+            executed_given_imagined_violating=("executed_given_imagined_violating", "mean"),
+        )
+        .reset_index()
+    )
     return agg
 
 
-def penalised_fraction_curve(results: Path | str = "artifacts/results", traces: Path | str = "artifacts/traces", table: str = "planning_filtered.parquet", condition: str = "oracle") -> pd.DataFrame:
+def penalised_fraction_curve(
+    results: Path | str = "artifacts/results",
+    traces: Path | str = "artifacts/traces",
+    table: str = "planning_filtered.parquet",
+    condition: str = "oracle",
+) -> pd.DataFrame:
     """Mean penalised fraction of the CEM population per judged iteration (first replan)."""
     p = Path(results) / table
     df = pd.read_parquet(p)
@@ -73,15 +108,40 @@ def penalised_fraction_curve(results: Path | str = "artifacts/results", traces: 
     rows = []
     for rid, g in df.groupby("run_id"):
         for f in sorted(glob.glob(str(Path(traces) / rid / "ep_*.jsonl"))):
-            recs = [r for r in TraceWriter.read(f) if not r.get("summary") and "penalised_fraction" in r]
+            recs = [
+                r for r in TraceWriter.read(f) if not r.get("summary") and "penalised_fraction" in r
+            ]
             if not recs:
                 continue
             first_step = min(r.get("step", 0) for r in recs)
             for r in recs:
                 if r.get("step", 0) == first_step:
-                    rows.append({"constraint_set": g.constraint_set.iloc[0], "iter": r["iter"], "penalised_fraction": r["penalised_fraction"]})
+                    rows.append(
+                        {
+                            "constraint_set": g.constraint_set.iloc[0],
+                            "iter": r["iter"],
+                            "penalised_fraction": r["penalised_fraction"],
+                        }
+                    )
     out = pd.DataFrame(rows)
-    return out.groupby(["constraint_set", "iter"]).penalised_fraction.agg(["mean", "count"]).reset_index() if not out.empty else out
+    return (
+        out.groupby(["constraint_set", "iter"])
+        .penalised_fraction.agg(["mean", "count"])
+        .reset_index()
+        if not out.empty
+        else out
+    )
+
+
+def cached_summary(compute: Callable[[], pd.DataFrame], path: Path | str) -> pd.DataFrame:
+    """Run ``compute`` (which reads traces); refresh ``path`` when it returns rows, else read it."""
+    path = Path(path)
+    df = compute()
+    if not df.empty:
+        path.parent.mkdir(parents=True, exist_ok=True)
+        df.to_csv(path, index=False)
+        return df
+    return pd.read_csv(path) if path.exists() else df
 
 
 if __name__ == "__main__":  # pragma: no cover

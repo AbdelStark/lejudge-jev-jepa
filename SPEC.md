@@ -179,8 +179,8 @@ Bootstrap 95 % CIs (10,000 resamples) for all rates; paired Wilcoxon across cond
 
 - [x] LeWM PushT success reproduced with the authors' protocol (86 % with history 3, 90 % with history 1, 50 episodes; the paper text gives no single number to compare against — see DECISIONS)
 - [x] Probes: R² and bucket accuracy reported in `artifacts/probes/pusht/linear@1/meta.json` (block cell 0.95, angle 0.94, edge 0.99)
-- [x] Judge-only study complete: Jev, keyword, oracle on 256 items × 12 constraints × 8 texts with 3 repeats on 64 items; local-LLM baseline on a 64-item subset; tables in `artifacts/results/judge_only.parquet`
+- [x] Judge-only study complete: Jev, keyword, oracle on 256 items × 12 constraints × 8 texts with 3 repeats on 64 items; local-LLM baseline on a 16-item subset (8 executed windows, canonical texts); tables in `artifacts/results/judge_only.parquet`
 - [x] Planning study complete (4 conditions × 3 sets × 3 seeds × 30 episodes) with paired tests; λ sweep and ablations in `ablations.parquet`
-- [x] `make paper` regenerates figures offline from cache
+- [x] `make paper` regenerates every figure and number offline from the cache on a clean clone (no dataset, no traces); CI rebuilds `paper/values.json` and fails on any difference
 - [~] Space runs locally (`lejudge demo`, cached gallery of 20 seeds × 6 presets); 20-second clip at `artifacts/demo/clip.mp4`; not deployed to Hugging Face in this build
 - [x] Preprint draft `paper/main.tex` filled by `paper/fill.py` from `artifacts/results/`; unavailable numbers stay `[X]`

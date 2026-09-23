@@ -41,14 +41,31 @@ def _info(n=40, h=3, seed=0):
 def test_lam_zero_is_identity(vocab, library):
     info = _info()
     base = ToyBase()
-    cost = JevCost(base, ToyProbe(), vocab, library.set("edges"), OracleJudge(vocab, on_probes=True), lam=0.0, mode="per_iter")
+    cost = JevCost(
+        base,
+        ToyProbe(),
+        vocab,
+        library.set("edges"),
+        OracleJudge(vocab, on_probes=True),
+        lam=0.0,
+        mode="per_iter",
+    )
     out = cost(info)
     assert torch.equal(out, base(info))
 
 
 def test_penalty_applies_to_elites_and_shape(vocab, library):
     info = _info()
-    cost = JevCost(ToyBase(), ToyProbe(), vocab, library.set("edges"), OracleJudge(vocab, on_probes=True), lam=1.0, K=16, mode="per_iter")
+    cost = JevCost(
+        ToyBase(),
+        ToyProbe(),
+        vocab,
+        library.set("edges"),
+        OracleJudge(vocab, on_probes=True),
+        lam=1.0,
+        K=16,
+        mode="per_iter",
+    )
     out = cost(info)
     assert out.shape == (1, 40)
     tr = cost.history[-1]
@@ -62,8 +79,23 @@ def test_penalty_applies_to_elites_and_shape(vocab, library):
 
 
 def test_modes_control_call_count(vocab, library):
-    for mode, n_iters, last_n, expected in (("per_iter", 4, 0, 4), ("final_only", 4, 0, 1), ("last_n", 4, 2, 2), ("every_k", 7, 0, 3)):
-        cost = JevCost(ToyBase(), ToyProbe(), vocab, library.set("edges"), OracleJudge(vocab, on_probes=True), mode=mode, n_iters=n_iters, judge_last_n=last_n, judge_every=3)
+    for mode, n_iters, last_n, expected in (
+        ("per_iter", 4, 0, 4),
+        ("final_only", 4, 0, 1),
+        ("last_n", 4, 2, 2),
+        ("every_k", 7, 0, 3),
+    ):
+        cost = JevCost(
+            ToyBase(),
+            ToyProbe(),
+            vocab,
+            library.set("edges"),
+            OracleJudge(vocab, on_probes=True),
+            mode=mode,
+            n_iters=n_iters,
+            judge_last_n=last_n,
+            judge_every=3,
+        )
         cb = cost.callback()
         cb.reset()
         for i in range(n_iters):
@@ -84,7 +116,16 @@ def test_gate_holds_uncertain_candidates(vocab, library):
             return JudgeResult(p, conf, 1.0, 0, 0, "x", True)
 
     info = _info()
-    cost = JevCost(ToyBase(), ToyProbe(), vocab, library.set("edges"), Unsure(), lam=1.0, mode="per_iter", tau=0.5)
+    cost = JevCost(
+        ToyBase(),
+        ToyProbe(),
+        vocab,
+        library.set("edges"),
+        Unsure(),
+        lam=1.0,
+        mode="per_iter",
+        tau=0.5,
+    )
     cost(info)
     tr = cost.history[-1]
     assert all(tr.held) and all(p == 0.0 for p in tr.penalty)
@@ -93,14 +134,24 @@ def test_gate_holds_uncertain_candidates(vocab, library):
 
 def test_keyword_judge_in_the_loop(vocab, library):
     info = _info()
-    cost = JevCost(ToyBase(), ToyProbe(), vocab, library.set("edges"), KeywordJudge(), lam=2.0, mode="per_iter")
+    cost = JevCost(
+        ToyBase(), ToyProbe(), vocab, library.set("edges"), KeywordJudge(), lam=2.0, mode="per_iter"
+    )
     out = cost(info)
     assert torch.isfinite(out).all()
 
 
 def test_hard_reject(vocab, library):
     info = _info()
-    cost = JevCost(ToyBase(), ToyProbe(), vocab, library.set("edges"), OracleJudge(vocab, on_probes=True), mode="per_iter", hard_reject=True)
+    cost = JevCost(
+        ToyBase(),
+        ToyProbe(),
+        vocab,
+        library.set("edges"),
+        OracleJudge(vocab, on_probes=True),
+        mode="per_iter",
+        hard_reject=True,
+    )
     out = cost(info)
     assert torch.isinf(out).any()
 
@@ -129,14 +180,18 @@ class CountingJudge:
         return JudgeResult(p, conf, 1.0, 10, 1, "fake-model", False, n_calls=1)
 
 
-def test_step_dedupe_path_judges_every_candidate_and_memoises(vocab, library, tmp_path, monkeypatch):
+def test_step_dedupe_path_judges_every_candidate_and_memoises(
+    vocab, library, tmp_path, monkeypatch
+):
     import lejudge.cost.jevcost as jc
     from lejudge.judge.cache import Cache
 
     monkeypatch.setattr(jc, "get_cache", lambda: Cache(tmp_path / "c.sqlite"))
     info = _info()
     judge = CountingJudge()
-    cost = JevCost(ToyBase(), ToyProbe(), vocab, library.set("edges"), judge, lam=1.0, K=16, mode="per_iter")
+    cost = JevCost(
+        ToyBase(), ToyProbe(), vocab, library.set("edges"), judge, lam=1.0, K=16, mode="per_iter"
+    )
     out = cost(info)
     tr = cost.history[-1]
     assert tr.n_candidates == 40 and judge.calls == 1
@@ -152,6 +207,8 @@ def test_step_dedupe_path_judges_every_candidate_and_memoises(vocab, library, tm
     cost(info)
     assert judge.calls == 1 and cost.history[-1].new_steps == 0
     # a fresh JevCost with a fresh in-process cache finds the steps in the persistent table
-    cost2 = JevCost(ToyBase(), ToyProbe(), vocab, library.set("edges"), judge, lam=1.0, K=16, mode="per_iter")
+    cost2 = JevCost(
+        ToyBase(), ToyProbe(), vocab, library.set("edges"), judge, lam=1.0, K=16, mode="per_iter"
+    )
     cost2(info)
     assert judge.calls == 1 and cost2.stats()["step_db_hits"] > 0

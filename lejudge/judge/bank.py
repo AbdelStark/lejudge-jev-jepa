@@ -153,11 +153,19 @@ def to_sdk(spec: QuestionSpec) -> Any:
 
 
 def spec_json(spec: QuestionSpec) -> dict[str, Any]:
-    return {"key": spec.key, "kind": spec.kind, "instructions": spec.instructions, "criteria": spec.criteria}
+    return {
+        "key": spec.key,
+        "kind": spec.kind,
+        "instructions": spec.instructions,
+        "criteria": spec.criteria,
+    }
 
 
 # ---------------------------------------------------------------------------- lint
-_ARITH = re.compile(r"(\bcount\b|\bhow many\b|\bsum\b|\bmore than\b|\bless than\b|\bgreater\b|\bfewer\b|\btimes\b|[+*/<>=]|\d+\s*%)", re.I)
+_ARITH = re.compile(
+    r"(\bcount\b|\bhow many\b|\bsum\b|\bmore than\b|\bless than\b|\bgreater\b|\bfewer\b|\btimes\b|[+*/<>=]|\d+\s*%)",
+    re.I,
+)
 _NEGATED = re.compile(r"\b(does not|doesn't|isn't|is not|never|no longer|not)\b", re.I)
 
 
@@ -168,7 +176,11 @@ def _word_count(s: str) -> int:
 def lint_question(spec: QuestionSpec, allow_numbers: bool = False) -> list[str]:
     problems: list[str] = []
     instr = spec.instructions
-    crit_text = " ".join(spec.criteria.values()) if isinstance(spec.criteria, dict) else " ".join(spec.criteria)
+    crit_text = (
+        " ".join(spec.criteria.values())
+        if isinstance(spec.criteria, dict)
+        else " ".join(spec.criteria)
+    )
     # rule 4: no arithmetic, counting, numeric comparison (t=<n> and k<n>/c<n> are keys, not numbers)
     stripped = re.sub(r"\b(t=\d+|k\d+|c\d+)\b", "", instr + " " + crit_text)
     if _ARITH.search(stripped):
@@ -192,7 +204,7 @@ def lint_constraint_text(text: str) -> list[str]:
     problems: list[str] = []
     if len(text) > 200:
         problems.append("text longer than 200 characters")
-    if re.search(r"\d", text) and not re.search(r"\b(one|two|three)\b", text):
+    if re.search(r"\d", text):  # spell counts out ("the first three steps"); Jev reads words
         problems.append(f"digit in constraint text: {text!r}")
     return problems
 

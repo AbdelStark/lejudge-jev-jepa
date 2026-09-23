@@ -14,7 +14,15 @@ import yaml
 ROOT = Path(__file__).resolve().parents[1]
 FIG = ROOT / "paper" / "figures"
 RES = ROOT / "artifacts" / "results"
-COND_TEX = {"lewm": "LeWM (unconstrained)", "keyword": "keyword checker", "oracle": "oracle-on-probes", "jev": "LeJudge / Jev ($\\tau{=}0.5$)", "jev:tau0.5": "LeJudge / Jev ($\\tau{=}0.5$)", "jev:tau0.75": "Jev ($\\tau{=}0.75$)", "jev:tau1.0": "Jev, gate off ($\\tau{=}1$)"}
+COND_TEX = {
+    "lewm": "LeWM (unconstrained)",
+    "keyword": "keyword checker",
+    "oracle": "oracle-on-probes",
+    "jev": "LeJudge / Jev ($\\tau{=}0.5$)",
+    "jev:tau0.5": "LeJudge / Jev ($\\tau{=}0.5$)",
+    "jev:tau0.75": "Jev ($\\tau{=}0.75$)",
+    "jev:tau1.0": "Jev, gate off ($\\tau{=}1$)",
+}
 SET_TEX = {"spatial": "spatial", "spatial+temporal": "spatial+temporal", "implicit": "implicit"}
 
 
@@ -31,15 +39,34 @@ def num(x, d: int = 2) -> str:
 
 
 def ci(m, lo, hi, d: int = 2) -> str:
-    return "[X]" if any(pd.isna(v) for v in (m, lo, hi)) else f"{float(m):.{d}f} [{float(lo):.{d}f}, {float(hi):.{d}f}]"
+    return (
+        "[X]"
+        if any(pd.isna(v) for v in (m, lo, hi))
+        else f"{float(m):.{d}f} [{float(lo):.{d}f}, {float(hi):.{d}f}]"
+    )
+
+
+def _signed(v: float, d: int) -> str:
+    """Signed number with a typographic minus (text mode): ``$-$10``, ``+5.6``."""
+    s = f"{v:+.{d}f}"
+    return "$-$" + s[1:] if s.startswith("-") else s
 
 
 def pts(x) -> str:
-    return "[X]" if x is None or pd.isna(x) else f"{100 * float(x):+.0f}"
+    return "[X]" if x is None or pd.isna(x) else _signed(100 * float(x), 0)
 
 
 def pts1(x) -> str:
-    return "[X]" if x is None or pd.isna(x) else f"{100 * float(x):+.1f}"
+    return "[X]" if x is None or pd.isna(x) else _signed(100 * float(x), 1)
+
+
+def pts_abs(x) -> str:
+    """Magnitude in points, for prose such as "lowers violations by 10 points"."""
+    return "[X]" if x is None or pd.isna(x) else f"{abs(100 * float(x)):.0f}"
+
+
+def rd_ci(lo, hi) -> str:
+    return f"[{_signed(100 * float(lo), 0)}, {_signed(100 * float(hi), 0)}]"
 
 
 def main() -> None:
@@ -57,13 +84,15 @@ def main() -> None:
     vals["n_constraints"] = str(len(lib.constraints))
     prereg = (ROOT / "docs" / "PREREG.md").read_text()
     vals["prereg_words"] = str(len(prereg.split()))
-    summary = json.loads((FIG / "summary.json").read_text()) if (FIG / "summary.json").exists() else {}
+    summary = (
+        json.loads((FIG / "summary.json").read_text()) if (FIG / "summary.json").exists() else {}
+    )
 
     # ---- probes -------------------------------------------------------------------------
     pm = summary.get("probes")
     if pm:
         t = pm["test"]
-        vals["probe_n_test"] = str(t["n"])
+        vals["probe_n_test"] = f"{int(t['n']):,}"
         vals["probe_r2_block"] = num(t["r2"]["block_xy"], 3)
         vals["probe_r2_agent"] = num(t["r2"]["agent_xy"], 3)
         vals["probe_r2_angle"] = num(t["r2"]["angle_sincos"], 3)
@@ -82,18 +111,28 @@ def main() -> None:
             vals["probe_bucket_contact_h5"] = num(c[-1]["bucket_accuracy"]["contact"], 2)
             vals["probe_bucket_agent_h5"] = num(c[-1]["bucket_accuracy"]["agent"], 2)
             vals["probe_bucket_angle_h5"] = num(c[-1]["bucket_accuracy"]["block_angle"], 2)
-            accs = [c[-1]["bucket_accuracy"][k] for k in ("block", "block_edge", "block_angle", "agent", "contact")]
+            accs = [
+                c[-1]["bucket_accuracy"][k]
+                for k in ("block", "block_edge", "block_angle", "agent", "contact")
+            ]
             vals["probe_h5_min"] = num(min(accs), 2)
             vals["probe_h5_max"] = num(max(accs), 2)
             vals["probe_block_err_h5_px"] = num(c[-1]["block_error_px"], 1)
             vals["probe_imagined_n"] = str(pm["imagined"]["n_starts"])
-        accs0 = [t["bucket_accuracy"][k] for k in ("block", "block_edge", "block_angle", "agent", "contact")]
+        accs0 = [
+            t["bucket_accuracy"][k]
+            for k in ("block", "block_edge", "block_angle", "agent", "contact")
+        ]
         vals["probe_h0_min"] = num(min(accs0), 2)
         vals["probe_h0_max"] = num(max(accs0), 2)
     pmeta = json.loads((ROOT / "artifacts/probes/pusht/linear@1/meta.json").read_text())
     vals["probe_train_episodes"] = str(pmeta["dataset"]["episodes"])
-    vals["probe_train_frames"] = str(pmeta["dataset"]["frames"])
-    mm = json.loads((ROOT / "artifacts/probes/pusht/mlp@1/meta.json").read_text()) if (ROOT / "artifacts/probes/pusht/mlp@1/meta.json").exists() else None
+    vals["probe_train_frames"] = f"{int(pmeta['dataset']['frames']):,}"
+    mm = (
+        json.loads((ROOT / "artifacts/probes/pusht/mlp@1/meta.json").read_text())
+        if (ROOT / "artifacts/probes/pusht/mlp@1/meta.json").exists()
+        else None
+    )
     if mm:
         vals["mlp_r2_angle"] = num(mm["metrics"]["test"]["r2"]["angle_sincos"], 3)
         vals["mlp_bucket_angle"] = num(mm["metrics"]["test"]["bucket_accuracy"]["block_angle"], 2)
@@ -108,7 +147,15 @@ def main() -> None:
                 vals[key] = pct(g.success.mean())
                 vals[key + "_n"] = str(len(g))
                 vals[key + "_p50"] = num(g.plan_time_p50_s.median(), 2)
-        vals["m0_weak_success"] = pct(m0[m0.tag == "m0_weakdata_superseded"].success.mean()) if (m0.tag == "m0_weakdata_superseded").any() else "[X]"
+        g = m0[m0.tag == "m0_h3"]
+        vals["m0_edges_viol_n"] = str(
+            int(sum(json.loads(x).get("edges_never", False) for x in g.violations_by_constraint))
+        )
+        vals["m0_weak_success"] = (
+            pct(m0[m0.tag == "m0_weakdata_superseded"].success.mean())
+            if (m0.tag == "m0_weakdata_superseded").any()
+            else "[X]"
+        )
 
     # ---- planning studies ----------------------------------------------------------------
     studies = {"s1": RES / "planning.parquet", "s2": RES / "planning_filtered.parquet"}
@@ -141,18 +188,30 @@ def main() -> None:
             vals[f"{key}_{ck}_all_calls"] = num(g.judge_calls.mean(), 1)
             vals[f"{key}_{ck}_all_tokens"] = f"{g.tokens_in.mean():,.0f}"
             vals[f"{key}_{ck}_all_p50"] = num(np.nanmedian(g.plan_time_p50_s), 2)
-        tests = pd.concat([paired_tests(p, "lewm", "violation"), paired_tests(p, "lewm", "success")])
+        tests = pd.concat(
+            [paired_tests(p, "lewm", "violation"), paired_tests(p, "lewm", "success")]
+        )
         for _, r in tests.iterrows():
             ck = str(r.condition).replace(":", "_").replace(".", "")
             sk = str(r.constraint_set).replace("+", "_")
             vals[f"{key}_{ck}_{sk}_{r.metric}_rd"] = pts(r.risk_difference)
             vals[f"{key}_{ck}_{sk}_{r.metric}_rd1"] = pts1(r.risk_difference)
-            vals[f"{key}_{ck}_{sk}_{r.metric}_rdci"] = f"[{100 * r.rd_lo:+.0f}, {100 * r.rd_hi:+.0f}]"
+            vals[f"{key}_{ck}_{sk}_{r.metric}_rdabs"] = pts_abs(r.risk_difference)
+            vals[f"{key}_{ck}_{sk}_{r.metric}_rdci"] = rd_ci(r.rd_lo, r.rd_hi)
             vals[f"{key}_{ck}_{sk}_{r.metric}_p"] = num(r.p, 3)
             vals[f"{key}_{ck}_{sk}_{r.metric}_pholm"] = num(r.p_holm, 3)
-        vals[f"{key}_episodes_per_cell"] = str(int(p[p.condition != "llm-small"].groupby(["condition", "constraint_set", "seed"]).size().max()))
+        vals[f"{key}_episodes_per_cell"] = str(
+            int(
+                p[p.condition != "llm-small"]
+                .groupby(["condition", "constraint_set", "seed"])
+                .size()
+                .max()
+            )
+        )
         vals[f"{key}_seeds"] = str(p.seed.nunique())
-        vals[f"{key}_n_significant"] = str(int((tests[tests.metric == "violation"].p_holm < 0.05).sum()))
+        vals[f"{key}_n_significant"] = str(
+            int((tests[tests.metric == "violation"].p_holm < 0.05).sum())
+        )
         write_planning_table(t, FIG / f"table_planning_{key}.tex", p)
     if "s1" in frames:
         sat = annotate_satisfiable(frames["s1"])
@@ -160,32 +219,57 @@ def main() -> None:
         vals["s1_spatial_unsat_pct"] = pct(1.0 - sp.satisfiable.mean()) if len(sp) else "[X]"
         for cset in ("spatial", "spatial+temporal", "implicit"):
             g = sat[(sat.constraint_set == cset) & (sat.condition == "lewm")]
-            vals[f"s1_{cset.replace('+', '_')}_sat_pct"] = pct(g.satisfiable.mean()) if len(g) else "[X]"
+            vals[f"s1_{cset.replace('+', '_')}_sat_pct"] = (
+                pct(g.satisfiable.mean()) if len(g) else "[X]"
+            )
         for cond in ("lewm", "jev", "oracle", "keyword"):
             g = sat[(sat.condition == cond) & sat.satisfiable & (sat.constraint_set == "spatial")]
             vals[f"s1_{cond}_spatial_sat_viol_pct"] = pct(g.violation.mean()) if len(g) else "[X]"
-        vals["s1_spatial_sat_n"] = str(int(sat[(sat.condition == "lewm") & (sat.constraint_set == "spatial")].satisfiable.sum()))
+        vals["s1_spatial_sat_n"] = str(
+            int(
+                sat[(sat.condition == "lewm") & (sat.constraint_set == "spatial")].satisfiable.sum()
+            )
+        )
         # goal-in-centre alone (the rest of the unsatisfiable episodes start in the centre)
-        from lejudge.eval.planning import sample_episode_specs
-        from lejudge.probes.data import EpisodeData
-        from lejudge.types import GroundTruthState
+        from lejudge.eval.report import _episode_key, episode_states
         from lejudge.vocab import load_vocab
 
-        data = EpisodeData(str(ROOT / "artifacts/data/pusht_expert.npz"))
         vocab = load_vocab("pusht@1")
-        gc, sc, tot = 0, 0, 0
-        for seed in sorted(frames["s1"].seed.unique()):
-            for es in sample_episode_specs(data, int(frames["s1"][frames["s1"].seed == seed].episode.max()) + 1, int(seed), 25):
-                g = GroundTruthState.from_env(es.goal_state)
-                s0 = GroundTruthState.from_env(es.state)
-                cell = lambda st: str(vocab.cell_name(vocab.block_centroid(np.array(st.block_xy), np.array(st.block_angle))))  # noqa: E731
-                gc += cell(g) == "centre"
-                sc += cell(s0) == "centre" and cell(g) != "centre"
-                tot += 1
+
+        def cell(st) -> str:
+            return str(
+                vocab.cell_name(
+                    vocab.block_centroid(np.array(st.block_xy), np.array(st.block_angle))
+                )
+            )
+
+        s1 = frames["s1"]
+        states = episode_states(s1)
+        keys = sorted({_episode_key(r, "start_filter" in s1.columns) for r in s1.itertuples()})
+        gc = sc = up = 0
+        for k in keys:
+            s0, g = states[k]
+            gc += cell(g) == "centre"
+            sc += cell(s0) == "centre" and cell(g) != "centre"
+            up += str(vocab.angle_name(np.array(s0.block_angle))) == "upright"
+        tot = len(keys)
         vals["s1_spatial_goalcentre_pct"] = pct(gc / tot)
         vals["s1_spatial_goalcentre_n"] = str(gc)
         vals["s1_spatial_startcentre_n"] = str(sc)
         vals["s1_spatial_total_n"] = str(tot)
+        vals["s1_start_upright_pct"] = pct(up / tot)
+        # the superseded K=16 / last-3 shortlist cost with the oracle judge (archived partial run)
+        sl_path = RES / "planning_oracle_lastn_partial.parquet"
+        if sl_path.exists():
+            sl = pd.read_parquet(sl_path)
+            lw = frames["s1"][frames["s1"].condition == "lewm"]
+            m = sl.merge(
+                lw[["constraint_set", "seed", "episode", "violation"]],
+                on=["constraint_set", "seed", "episode"],
+                suffixes=("", "_lewm"),
+            )
+            vals["shortlist_n"] = str(len(m))
+            vals["shortlist_same_n"] = str(int((m.violation == m.violation_lewm).sum()))
     # ---- Study 3 ---------------------------------------------------------------------------
     if (RES / "planning_gate.parquet").exists() and "s2" in frames:
         g3 = pd.read_parquet(RES / "planning_gate.parquet")
@@ -204,6 +288,17 @@ def main() -> None:
             vals[f"s3_{ck}_{sk}_succ_pct1"] = pct1(r.success)
             vals[f"s3_{ck}_{sk}_succ_pct"] = pct(r.success)
             vals[f"s3_{ck}_{sk}_held"] = pct(r.abstention_rate)
+        # H1'' / H2'' margins: gate-off Jev vs oracle (violation) and vs gated Jev (success)
+        cell = t3.set_index(["condition", "constraint_set"])
+        for cset in sets:
+            sk = cset.replace("+", "_")
+            off, orc, gated = (
+                cell.loc[("jev:tau1.0", cset)],
+                cell.loc[("oracle", cset)],
+                cell.loc[("jev:tau0.5", cset)],
+            )
+            vals[f"s3_gap_{sk}"] = f"{abs(100 * (off.violation - orc.violation)):.1f}"
+            vals[f"s3_succ_cost_{sk}"] = f"{100 * (gated.success - off.success):.0f}"
         for cond, g in both.groupby("condition"):
             ck = str(cond).replace(":", "_").replace(".", "")
             vals[f"s3_{ck}_all_succ_pct"] = pct(g.success.mean())
@@ -216,25 +311,60 @@ def main() -> None:
                 sk = str(r.constraint_set).replace("+", "_")
                 vals[f"s3_{ck}_{sk}_{rk}_rd"] = pts(r.risk_difference)
                 vals[f"s3_{ck}_{sk}_{rk}_rd1"] = pts1(r.risk_difference)
-                vals[f"s3_{ck}_{sk}_{rk}_rdci"] = f"[{100 * r.rd_lo:+.0f}, {100 * r.rd_hi:+.0f}]"
+                vals[f"s3_{ck}_{sk}_{rk}_rdabs"] = pts_abs(r.risk_difference)
+                vals[f"s3_{ck}_{sk}_{rk}_rdci"] = rd_ci(r.rd_lo, r.rd_hi)
                 vals[f"s3_{ck}_{sk}_{rk}_pholm"] = num(r.p_holm, 3)
-        write_planning_table(t3, FIG / "table_planning_s3.tex", both, conds=["lewm", "keyword", "oracle", "jev:tau0.5", "jev:tau0.75", "jev:tau1.0"])
+        write_planning_table(
+            t3,
+            FIG / "table_planning_s3.tex",
+            both,
+            conds=["lewm", "keyword", "oracle", "jev:tau0.5", "jev:tau0.75", "jev:tau1.0"],
+        )
     # ---- ablations -------------------------------------------------------------------------
     if (RES / "ablations.parquet").exists():
         a = pd.read_parquet(RES / "ablations.parquet")
-        ta = a.groupby("tag").agg(n=("success", "size"), success=("success", "mean"), violation=("violation", "mean"), calls=("judge_calls", "mean"), held=("abstention_rate", "mean")).reset_index()
+        ta = (
+            a.groupby("tag")
+            .agg(
+                n=("success", "size"),
+                success=("success", "mean"),
+                violation=("violation", "mean"),
+                calls=("judge_calls", "mean"),
+                held=("abstention_rate", "mean"),
+            )
+            .reset_index()
+        )
         vals["abl_viol_min"] = pct(ta.violation.min())
         vals["abl_viol_max"] = pct(ta.violation.max())
         vals["abl_succ_min"] = pct(ta.success.min())
         vals["abl_succ_max"] = pct(ta.success.max())
         vals["abl_n_runs"] = str(len(ta))
         vals["abl_episodes"] = str(int(ta.n.max()))
+        vals["abl_zero_call_runs"] = str(int((ta.calls == 0).sum()))
+        vals["abl_per_iter_calls"] = num(ta.set_index("tag").calls.get("per_iter", np.nan), 1)
         write_ablation_table(ta, FIG / "table_ablations.tex")
     if (RES / "ablations_filtered.parquet").exists():
         af = pd.read_parquet(RES / "ablations_filtered.parquet")
         vals["abl_filt_viol_min"] = pct(af.groupby("lam").violation.mean().min())
         vals["abl_filt_viol_max"] = pct(af.groupby("lam").violation.mean().max())
     # ---- diagnostics -----------------------------------------------------------------------
+    if (RES / "diagnostics.parquet").exists():
+        dg = (
+            pd.read_parquet(RES / "diagnostics.parquet")
+            .groupby("tag")
+            .agg(
+                n=("success", "size"), success=("success", "mean"), violation=("violation", "mean")
+            )
+        )
+        for tag, r in dg.iterrows():
+            vals[f"{tag}_viol"] = num(r.violation, 2)
+            vals[f"{tag}_succ_pct"] = pct(r.success)
+            vals[f"{tag}_n"] = str(int(r.n))
+    pf_path = FIG / "paper" / "table_penalised_fraction.csv"
+    if pf_path.exists():
+        pf = pd.read_csv(pf_path)
+        last = pf[pf["iter"] == pf["iter"].max()]["mean"]
+        vals["pf_final_min"], vals["pf_final_max"] = pct(last.min()), pct(last.max())
     dpath = FIG / "paper" / "table_imagined_vs_executed.csv"
     if dpath.exists():
         d = pd.read_csv(dpath)
@@ -244,7 +374,9 @@ def main() -> None:
             vals[f"diag_{ck}_{sk}_exec"] = pct(r.executed_violation)
             vals[f"diag_{ck}_{sk}_exec_given_clean"] = pct(r.executed_given_imagined_clean)
             vals[f"diag_{ck}_{sk}_exec_given_viol"] = pct(r.executed_given_imagined_violating)
-        write_diag_table(d[d.table.isin(["planning_filtered"])], FIG / "table_imagined_vs_executed.tex")
+        write_diag_table(
+            d[d.table.isin(["planning_filtered"])], FIG / "table_imagined_vs_executed.tex"
+        )
     # ---- judge-only ------------------------------------------------------------------------
     if (RES / "judge_only.parquet").exists():
         j = pd.read_parquet(RES / "judge_only.parquet")
@@ -266,7 +398,9 @@ def main() -> None:
             vals[key + "_lat"] = num(r.latency_ms_per_1000 / 1000.0, 1)
         vals["jo_items"] = str(j.item_id.nunique())
         vals["jo_rows"] = f"{len(j):,}"
-        vals["jo_triples"] = f"{j.item_id.nunique() * j.constraint.nunique() * j.variant.nunique():,}"
+        vals["jo_triples"] = (
+            f"{j.item_id.nunique() * j.constraint.nunique() * j.variant.nunique():,}"
+        )
         core = j[j.judge.isin(["jev", "keyword", "oracle"]) & (j.repeat == 0)]
         vals["jo_rows_core"] = f"{len(core):,}"
         vals["jo_rows_repeats"] = f"{len(j[(j.repeat > 0)]):,}"
@@ -274,6 +408,9 @@ def main() -> None:
         vals["jo_n_variants"] = str(j.variant.nunique())
         vals["jo_n_imagined"] = str(j[j.source == "imagined"].item_id.nunique())
         vals["jo_n_executed"] = str(j[j.source == "executed"].item_id.nunique())
+        vals["jo_n_executed_windows"] = str(
+            j[(j.source == "executed") & (j.description == "probe-words")].item_id.nunique()
+        )
         ct = consistency_table(j)
         if len(ct[ct.judge == "jev"]):
             vals["jo_jev_std_mean"] = num(ct[ct.judge == "jev"].score_std_mean.iloc[0], 3)
@@ -287,31 +424,78 @@ def main() -> None:
         # pooled Jev numbers over probe-word items
         g = j[(j.judge == "jev") & (j.description == "probe-words") & (j.repeat == 0)]
         canon, para = g[g.variant == "canonical"], g[g.variant.str.startswith("p")]
-        vals["jo_jev_pw_acc_pooled"] = num(prf(canon.label.to_numpy(), canon.score.to_numpy())["accuracy"], 2)
-        vals["jo_jev_pw_para_pooled"] = num(prf(para.label.to_numpy(), para.score.to_numpy())["accuracy"], 2)
-        vals["jo_jev_pw_auroc_pooled"] = num(auroc(canon.label.to_numpy(), canon.score.to_numpy()), 2)
+        vals["jo_jev_pw_acc_pooled"] = num(
+            prf(canon.label.to_numpy(), canon.score.to_numpy())["accuracy"], 2
+        )
+        vals["jo_jev_pw_para_pooled"] = num(
+            prf(para.label.to_numpy(), para.score.to_numpy())["accuracy"], 2
+        )
+        vals["jo_jev_pw_auroc_pooled"] = num(
+            auroc(canon.label.to_numpy(), canon.score.to_numpy()), 2
+        )
         g = j[(j.judge == "keyword") & (j.description == "probe-words") & (j.repeat == 0)]
         canon, para = g[g.variant == "canonical"], g[g.variant.str.startswith("p")]
-        vals["jo_kw_pw_acc_pooled"] = num(prf(canon.label.to_numpy(), canon.score.to_numpy())["accuracy"], 2)
-        vals["jo_kw_pw_para_pooled"] = num(prf(para.label.to_numpy(), para.score.to_numpy())["accuracy"], 2)
-        kw_drop = 100 * (prf(canon.label.to_numpy(), canon.score.to_numpy())["accuracy"] - prf(para.label.to_numpy(), para.score.to_numpy())["accuracy"])
+        vals["jo_kw_pw_acc_pooled"] = num(
+            prf(canon.label.to_numpy(), canon.score.to_numpy())["accuracy"], 2
+        )
+        vals["jo_kw_pw_para_pooled"] = num(
+            prf(para.label.to_numpy(), para.score.to_numpy())["accuracy"], 2
+        )
+        kw_drop = 100 * (
+            prf(canon.label.to_numpy(), canon.score.to_numpy())["accuracy"]
+            - prf(para.label.to_numpy(), para.score.to_numpy())["accuracy"]
+        )
         vals["jo_kw_drop_pts"] = f"{kw_drop:.0f}"
         gj = j[(j.judge == "jev") & (j.description == "probe-words") & (j.repeat == 0)]
-        jd = 100 * (prf(gj[gj.variant == "canonical"].label.to_numpy(), gj[gj.variant == "canonical"].score.to_numpy())["accuracy"] - prf(gj[gj.variant.str.startswith("p")].label.to_numpy(), gj[gj.variant.str.startswith("p")].score.to_numpy())["accuracy"])
+        jd = 100 * (
+            prf(
+                gj[gj.variant == "canonical"].label.to_numpy(),
+                gj[gj.variant == "canonical"].score.to_numpy(),
+            )["accuracy"]
+            - prf(
+                gj[gj.variant.str.startswith("p")].label.to_numpy(),
+                gj[gj.variant.str.startswith("p")].score.to_numpy(),
+            )["accuracy"]
+        )
         vals["jo_jev_drop_pts"] = f"{jd:.0f}"
         for src in ("imagined", "executed"):
-            gk = j[(j.judge == "keyword") & (j.description == "probe-words") & (j.repeat == 0) & (j.source == src)]
-            vals[f"jo_kw_{src}_canon"] = num(prf(gk[gk.variant == "canonical"].label.to_numpy(), gk[gk.variant == "canonical"].score.to_numpy())["accuracy"], 2)
-            vals[f"jo_kw_{src}_para"] = num(prf(gk[gk.variant.str.startswith("p")].label.to_numpy(), gk[gk.variant.str.startswith("p")].score.to_numpy())["accuracy"], 2)
+            gk = j[
+                (j.judge == "keyword")
+                & (j.description == "probe-words")
+                & (j.repeat == 0)
+                & (j.source == src)
+            ]
+            vals[f"jo_kw_{src}_canon"] = num(
+                prf(
+                    gk[gk.variant == "canonical"].label.to_numpy(),
+                    gk[gk.variant == "canonical"].score.to_numpy(),
+                )["accuracy"],
+                2,
+            )
+            vals[f"jo_kw_{src}_para"] = num(
+                prf(
+                    gk[gk.variant.str.startswith("p")].label.to_numpy(),
+                    gk[gk.variant.str.startswith("p")].score.to_numpy(),
+                )["accuracy"],
+                2,
+            )
         lj = j[j.judge.astype(str).str.startswith("llm")]
         if len(lj):
             ok = lj[~lj.failed]
             vals["llm_items"] = str(lj.item_id.nunique())
             vals["llm_windows"] = str(lj[lj.description == "probe-words"].item_id.nunique())
             vals["llm_failed_pct"] = pct(lj.failed.mean())
-            vals["llm_valid_acc"] = num(prf(ok.label.to_numpy(), ok.score.to_numpy())["accuracy"], 2) if len(ok) else "[X]"
-            vals["llm_valid_auroc"] = num(auroc(ok.label.to_numpy(), ok.score.to_numpy()), 2) if len(ok) else "[X]"
-            vals["llm_lat"] = num(lj.latency_ms_per_q.mean() / 1000.0 * 1000.0, 0)  # s per 1,000 = ms per judgment
+            vals["llm_valid_acc"] = (
+                num(prf(ok.label.to_numpy(), ok.score.to_numpy())["accuracy"], 2)
+                if len(ok)
+                else "[X]"
+            )
+            vals["llm_valid_auroc"] = (
+                num(auroc(ok.label.to_numpy(), ok.score.to_numpy()), 2) if len(ok) else "[X]"
+            )
+            vals["llm_lat"] = num(
+                lj.latency_ms_per_q.mean(), 0
+            )  # ms per judgment = s per 1,000 judgments
             models = lj.response_model.replace("", pd.NA).dropna().unique()
             vals["llm_model"] = str(models[0]) if len(models) else "qwen2.5:7b-instruct"
         write_judge_table(t, FIG / "table_judge_only.tex")
@@ -341,7 +525,9 @@ def _esc(s: str) -> str:
     return str(s).replace("_", "\\_").replace("+", "+")
 
 
-def write_planning_table(t: pd.DataFrame, out: Path, raw: pd.DataFrame, conds: list[str] | None = None) -> None:
+def write_planning_table(
+    t: pd.DataFrame, out: Path, raw: pd.DataFrame, conds: list[str] | None = None
+) -> None:
     from lejudge.eval.report import paired_tests
 
     conds = conds or ["lewm", "keyword", "oracle", "jev"]
@@ -349,9 +535,15 @@ def write_planning_table(t: pd.DataFrame, out: Path, raw: pd.DataFrame, conds: l
     stars = {(r.condition, r.constraint_set) for _, r in pt.iterrows() if r.p_holm < 0.05}
     sets = [s for s in ("spatial", "spatial+temporal", "implicit") if s in set(t.constraint_set)]
     lines = ["\\begin{tabular}{l" + "cc" * len(sets) + "}", "\\toprule"]
-    lines.append("& " + " & ".join(f"\\multicolumn{{2}}{{c}}{{{_esc(SET_TEX[s])}}}" for s in sets) + " \\\\")
+    lines.append(
+        "& " + " & ".join(f"\\multicolumn{{2}}{{c}}{{{_esc(SET_TEX[s])}}}" for s in sets) + " \\\\"
+    )
     lines.append(" ".join(f"\\cmidrule(lr){{{2 + 2 * i}-{3 + 2 * i}}}" for i in range(len(sets))))
-    lines.append("condition & " + " & ".join("violation $\\downarrow$ & success $\\uparrow$" for _ in sets) + " \\\\")
+    lines.append(
+        "condition & "
+        + " & ".join("violation $\\downarrow$ & success $\\uparrow$" for _ in sets)
+        + " \\\\"
+    )
     lines.append("\\midrule")
     for c in conds:
         if c not in set(t.condition):
@@ -362,7 +554,10 @@ def write_planning_table(t: pd.DataFrame, out: Path, raw: pd.DataFrame, conds: l
             if len(r):
                 r = r.iloc[0]
                 star = "$^{\\star}$" if (c, s) in stars else ""
-                cells += [f"{r.violation:.2f}{star} {{\\scriptsize[{r.violation_lo:.2f}, {r.violation_hi:.2f}]}}", f"{r.success:.2f} {{\\scriptsize[{r.success_lo:.2f}, {r.success_hi:.2f}]}}"]
+                cells += [
+                    f"{r.violation:.2f}{star} {{\\scriptsize[{r.violation_lo:.2f}, {r.violation_hi:.2f}]}}",
+                    f"{r.success:.2f} {{\\scriptsize[{r.success_lo:.2f}, {r.success_hi:.2f}]}}",
+                ]
             else:
                 cells += ["--", "--"]
         lines.append(f"{COND_TEX.get(c, _esc(c))} & " + " & ".join(cells) + " \\\\")
@@ -371,9 +566,48 @@ def write_planning_table(t: pd.DataFrame, out: Path, raw: pd.DataFrame, conds: l
 
 
 def write_ablation_table(ta: pd.DataFrame, out: Path) -> None:
-    names = {"lam_sweep_0.25": "$\\lambda=0.25$", "lam_sweep_0.5": "$\\lambda=0.5$", "lam_sweep_2": "$\\lambda=2$", "lam_sweep_4": "$\\lambda=4$", "K4": "$K=4$ (soft shortlist)", "K32": "$K=32$", "K64": "$K=64$", "K32_lam4": "$K=32$, $\\lambda=4$", "final_only": "judge final iteration only", "last_n3": "judge last 3 iterations", "per_iter": "judge every iteration", "unjudged_none": "no prior for unjudged (RFC draft)", "vocab_pusht2": "vocabulary $4\\times4$ (pusht@2)", "steps_half": "judge first 2 of 5 steps", "hard_reject": "hard rejection ($+\\infty$ if $p>0.7$)", "mlp_probe": "MLP probe"}
-    order = ["lam_sweep_0.25", "lam_sweep_0.5", "lam_sweep_2", "lam_sweep_4", "K4", "K32", "K64", "K32_lam4", "final_only", "last_n3", "per_iter", "unjudged_none", "vocab_pusht2", "steps_half", "hard_reject", "mlp_probe"]
-    lines = ["\\begin{tabular}{lccccc}", "\\toprule", "variant & $n$ & violation [95\\% CI] & success [95\\% CI] & Jev calls / ep & held \\\\", "\\midrule"]
+    names = {
+        "lam_sweep_0.25": "$\\lambda=0.25$",
+        "lam_sweep_0.5": "$\\lambda=0.5$",
+        "lam_sweep_2": "$\\lambda=2$",
+        "lam_sweep_4": "$\\lambda=4$",
+        "K4": "$K=4$ (soft shortlist)$^\\dagger$",
+        "K32": "$K=32^\\dagger$",
+        "K64": "$K=64^\\dagger$",
+        "K32_lam4": "$K=32^\\dagger$, $\\lambda=4$",
+        "final_only": "judge final iteration only",
+        "last_n3": "judge last 3 iterations",
+        "per_iter": "judge every iteration",
+        "unjudged_none": "no prior for unjudged (RFC draft)$^\\dagger$",
+        "vocab_pusht2": "vocabulary $4\\times4$ (pusht@2)",
+        "steps_half": "judge first 2 of 5 steps",
+        "hard_reject": "hard rejection ($+\\infty$ if $p>0.7$)",
+        "mlp_probe": "MLP probe",
+    }
+    order = [
+        "lam_sweep_0.25",
+        "lam_sweep_0.5",
+        "lam_sweep_2",
+        "lam_sweep_4",
+        "K4",
+        "K32",
+        "K64",
+        "K32_lam4",
+        "final_only",
+        "last_n3",
+        "per_iter",
+        "unjudged_none",
+        "vocab_pusht2",
+        "steps_half",
+        "hard_reject",
+        "mlp_probe",
+    ]
+    lines = [
+        "\\begin{tabular}{lccccc}",
+        "\\toprule",
+        "variant & $n$ & violation [95\\% CI] & success [95\\% CI] & Jev calls / ep & held \\\\",
+        "\\midrule",
+    ]
     from lejudge.eval.stats import bootstrap_ci
 
     raw = pd.read_parquet(RES / "ablations.parquet")
@@ -384,27 +618,57 @@ def write_ablation_table(ta: pd.DataFrame, out: Path) -> None:
             g = raw[raw.tag == tag]
             v = bootstrap_ci(g.violation.to_numpy(dtype=float))
             sc = bootstrap_ci(g.success.to_numpy(dtype=float))
-            lines.append(f"{names.get(tag, _esc(tag))} & {int(r.n)} & {v[0]:.2f} {{\\scriptsize[{v[1]:.2f}, {v[2]:.2f}]}} & {sc[0]:.2f} {{\\scriptsize[{sc[1]:.2f}, {sc[2]:.2f}]}} & {r.calls:.1f} & {100 * r.held:.0f}\\% \\\\")
+            lines.append(
+                f"{names.get(tag, _esc(tag))} & {int(r.n)} & {v[0]:.2f} {{\\scriptsize[{v[1]:.2f}, {v[2]:.2f}]}} & {sc[0]:.2f} {{\\scriptsize[{sc[1]:.2f}, {sc[2]:.2f}]}} & {r.calls:.1f} & {100 * r.held:.0f}\\% \\\\"
+            )
     lines += ["\\bottomrule", "\\end{tabular}"]
     out.write_text("\n".join(lines))
 
 
 def write_diag_table(d: pd.DataFrame, out: Path) -> None:
-    lines = ["\\begin{tabular}{llcccc}", "\\toprule", "set & judge & imagined & executed & executed $\\mid$ imagined clean & executed $\\mid$ imagined violating \\\\", "\\midrule"]
+    lines = [
+        "\\begin{tabular}{llcccc}",
+        "\\toprule",
+        "set & judge & imagined & executed & executed $\\mid$ imagined clean & executed $\\mid$ imagined violating \\\\",
+        "\\midrule",
+    ]
     for s in ("spatial", "spatial+temporal", "implicit"):
         for c in ("oracle", "keyword", "jev"):
             r = d[(d.constraint_set == s) & (d.condition == c)]
             if len(r):
                 r = r.iloc[0]
-                lines.append(f"{_esc(SET_TEX[s])} & {COND_TEX[c].split(' (')[0]} & {r.imagined_violation:.2f} & {r.executed_violation:.2f} & {r.executed_given_imagined_clean:.2f} & {r.executed_given_imagined_violating:.2f} \\\\")
+                lines.append(
+                    f"{_esc(SET_TEX[s])} & {COND_TEX[c].split(' (')[0]} & {r.imagined_violation:.2f} & {r.executed_violation:.2f} & {r.executed_given_imagined_clean:.2f} & {r.executed_given_imagined_violating:.2f} \\\\"
+                )
     lines += ["\\bottomrule", "\\end{tabular}"]
     out.write_text("\n".join(lines))
 
 
 def write_judge_table(t: pd.DataFrame, out: Path) -> None:
-    rows = [("jev", "imagined", "probe-words"), ("jev", "executed", "probe-words"), ("jev", "executed", "gt-words"), ("keyword", "imagined", "probe-words"), ("keyword", "executed", "probe-words"), ("llm", "executed", "probe-words"), ("llm", "executed", "gt-words"), ("oracle", "imagined", "probe-words"), ("oracle", "executed", "probe-words"), ("oracle", "executed", "gt-words")]
-    names = {"jev": "LeJudge / Jev", "keyword": "keyword checker", "llm": "local LLM (7B)", "oracle": "oracle-on-probes"}
-    lines = ["\\begin{tabular}{llcccccccc}", "\\toprule", "judge & items & $n$ & acc. & F1 & AUROC & ECE & acc. (paraphr.) & near-miss FPR & s / 1{,}000 \\\\", "\\midrule"]
+    rows = [
+        ("jev", "imagined", "probe-words"),
+        ("jev", "executed", "probe-words"),
+        ("jev", "executed", "gt-words"),
+        ("keyword", "imagined", "probe-words"),
+        ("keyword", "executed", "probe-words"),
+        ("llm", "executed", "probe-words"),
+        ("llm", "executed", "gt-words"),
+        ("oracle", "imagined", "probe-words"),
+        ("oracle", "executed", "probe-words"),
+        ("oracle", "executed", "gt-words"),
+    ]
+    names = {
+        "jev": "LeJudge / Jev",
+        "keyword": "keyword checker",
+        "llm": "local LLM (7B)",
+        "oracle": "oracle-on-probes",
+    }
+    lines = [
+        "\\begin{tabular}{llcccccccc}",
+        "\\toprule",
+        "judge & items & $n$ & acc. & F1 & AUROC & ECE & acc. (paraphr.) & near-miss FPR & s / 1{,}000 \\\\",
+        "\\midrule",
+    ]
     for j, src, desc in rows:
         r = t[(t.judge == j) & (t.source == src) & (t.description == desc)]
         if not len(r):
@@ -415,16 +679,24 @@ def write_judge_table(t: pd.DataFrame, out: Path) -> None:
             return "--" if pd.isna(v) else f"{v:.{d}f}"
 
         items = f"{src}, {'GT words' if desc == 'gt-words' else 'probe words'}"
-        lines.append(f"{names[j]} & {items} & {int(r.n_items)} & {f(r.canonical_accuracy)} & {f(r.canonical_f1)} & {f(r.canonical_auroc)} & {f(r.canonical_ece, 3)} & {f(r.paraphrase_accuracy)} & {f(r.negative_fpr)} & {f(r.latency_ms_per_1000 / 1000.0, 1)} \\\\")
+        lines.append(
+            f"{names[j]} & {items} & {int(r.n_items)} & {f(r.canonical_accuracy)} & {f(r.canonical_f1)} & {f(r.canonical_auroc)} & {f(r.canonical_ece, 3)} & {f(r.paraphrase_accuracy)} & {f(r.negative_fpr)} & {f(r.latency_ms_per_1000 / 1000.0, 1)} \\\\"
+        )
     lines += ["\\bottomrule", "\\end{tabular}"]
     out.write_text("\n".join(lines))
 
 
-
 def write_library_table(lib, out: Path) -> None:
-    lines = ["\\begin{tabular}{p{3.1cm}lp{4.9cm}p{5.6cm}}", "\\toprule", "id & family & canonical text & one paraphrase / one near-miss negative \\\\", "\\midrule"]
+    lines = [
+        "\\begin{tabular}{p{3.1cm}lp{4.9cm}p{5.4cm}}",
+        "\\toprule",
+        "id & family & canonical text & one paraphrase / one near-miss negative \\\\",
+        "\\midrule",
+    ]
     for c in lib.constraints:
-        lines.append(f"\\texttt{{{_esc(c.id)}}} & {c.family} & {c.text} & \\emph{{{c.paraphrases[0]}}} / {c.negatives[0]} \\\\")
+        lines.append(
+            f"\\texttt{{{_esc(c.id)}}} & {c.family} & {c.text} & \\emph{{{c.paraphrases[0]}}} / {c.negatives[0]} \\\\"
+        )
     lines += ["\\bottomrule", "\\end{tabular}"]
     out.write_text("\n".join(lines))
 
@@ -432,15 +704,27 @@ def write_library_table(lib, out: Path) -> None:
 def write_bank_table(out: Path) -> None:
     from lejudge.judge.bank import BANK_VERSION, always_question, never_question, soft_question
 
-    qs = [("never", never_question("k1", "c1", 2)), ("always", always_question("k1", "c1", 2)), ("soft", soft_question("k1", "c1"))]
-    lines = [f"\\small Bank \\texttt{{{_esc(BANK_VERSION)}}}. Rendered for candidate \\texttt{{k1}}, constraint \\texttt{{c1}}, step $t=2$.\\par\\medskip", "\\footnotesize\\begin{tabular}{p{1.4cm}p{4.8cm}p{8.6cm}}", "\\toprule", "family & instructions & criteria \\\\", "\\midrule"]
+    qs = [
+        ("never", never_question("k1", "c1", 2)),
+        ("always", always_question("k1", "c1", 2)),
+        ("soft", soft_question("k1", "c1")),
+    ]
+    lines = [
+        f"\\small Bank \\texttt{{{_esc(BANK_VERSION)}}}. Rendered for candidate \\texttt{{k1}}, constraint \\texttt{{c1}}, step $t=2$.\\par\\medskip",
+        "\\footnotesize\\begin{tabular}{p{1.4cm}p{4.6cm}p{8.4cm}}",
+        "\\toprule",
+        "family & instructions & criteria \\\\",
+        "\\midrule",
+    ]
     for fam, q in qs:
         crit = q.criteria
         if isinstance(crit, dict):
             ctext = f"\\textbf{{true:}} {crit['true']} \\textbf{{false:}} {crit['false']}"
         else:
             ctext = " ".join(f"\\textbf{{{i}:}} {c}" for i, c in enumerate(crit))
-        lines.append(f"{fam} ({'Noul' if fam != 'soft' else 'Score'}) & {q.instructions} & {ctext} \\\\")
+        lines.append(
+            f"{fam} ({'Noul' if fam != 'soft' else 'Score'}) & {q.instructions} & {ctext} \\\\"
+        )
     lines += ["\\bottomrule", "\\end{tabular}"]
     out.write_text("\n".join(lines).replace("_", "\\_"))
 

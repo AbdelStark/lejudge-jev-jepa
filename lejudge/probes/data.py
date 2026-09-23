@@ -73,7 +73,10 @@ def collect(
             ep = _finalize(buffers[i], model, env_seed[i], len(episodes_out))
             episodes_out.append(ep)
             if progress and len(episodes_out) % 10 == 0:
-                print(f"[collect] {len(episodes_out)}/{episodes} episodes, {time.time() - t0:.0f}s", flush=True)
+                print(
+                    f"[collect] {len(episodes_out)}/{episodes} episodes, {time.time() - t0:.0f}s",
+                    flush=True,
+                )
             buffers[i] = _new_buffer()
             reset_seeds[i] = next_seed
             env_seed[i] = next_seed
@@ -119,7 +122,9 @@ def _push(buf: dict[str, list], infos: dict[str, Any], i: int) -> None:
     buf["contact"].append(int(np.asarray(infos["n_contacts"][i]).reshape(-1)[-1] > 0))
 
 
-def _finalize(buf: dict[str, list], model: torch.nn.Module, seed: int, episode_idx: int) -> dict[str, np.ndarray]:
+def _finalize(
+    buf: dict[str, list], model: torch.nn.Module, seed: int, episode_idx: int
+) -> dict[str, np.ndarray]:
     pixels = np.stack(buf["pixels"], 0)
     n = len(pixels)
     emb = encode_frames(model, pixels)
@@ -148,12 +153,18 @@ class EpisodeData:
         from lejudge.types import contact_flags_from_states
 
         self.sim_contact = z["contact"] if "contact" in z else None
-        self.contact = contact_flags_from_states(z["state"]).astype(np.int8)  # geometric, frame-level (repo definition)
+        self.contact = contact_flags_from_states(z["state"]).astype(
+            np.int8
+        )  # geometric, frame-level (repo definition)
         self.action = z["action"]
         self.episode_idx = z["episode_idx"]
         self.step_idx = z["step_idx"]
         self.seed = z["seed"]
-        self.meta = json.loads(self.path.with_suffix("").with_suffix(".meta.json").read_text()) if self.path.with_suffix("").with_suffix(".meta.json").exists() else {}
+        self.meta = (
+            json.loads(self.path.with_suffix("").with_suffix(".meta.json").read_text())
+            if self.path.with_suffix("").with_suffix(".meta.json").exists()
+            else {}
+        )
         self.episodes = np.unique(self.episode_idx)
         self._starts = {int(e): int(np.nonzero(self.episode_idx == e)[0][0]) for e in self.episodes}
         self._lens = {int(e): int((self.episode_idx == e).sum()) for e in self.episodes}
@@ -167,12 +178,20 @@ class EpisodeData:
     def episode(self, e: int) -> dict[str, np.ndarray]:
         s, n = self._starts[int(e)], self._lens[int(e)]
         sl = slice(s, s + n)
-        return {"emb": self.emb[sl], "state": self.state[sl], "contact": self.contact[sl], "action": self.action[sl], "seed": int(self.seed[s])}
+        return {
+            "emb": self.emb[sl],
+            "state": self.state[sl],
+            "contact": self.contact[sl],
+            "action": self.action[sl],
+            "seed": int(self.seed[s]),
+        }
 
     def length(self, e: int) -> int:
         return self._lens[int(e)]
 
-    def split(self, fractions: tuple[float, float, float] = (0.8, 0.1, 0.1), seed: int = 0) -> dict[str, np.ndarray]:
+    def split(
+        self, fractions: tuple[float, float, float] = (0.8, 0.1, 0.1), seed: int = 0
+    ) -> dict[str, np.ndarray]:
         if len(self.episodes) < 30:  # tiny fixtures (CI): everything is "test"
             return {"train": self.episodes[:0], "val": self.episodes[:0], "test": self.episodes}
         rng = np.random.default_rng(seed)

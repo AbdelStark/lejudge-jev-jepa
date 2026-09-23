@@ -1,6 +1,6 @@
 # RFC-0005 — Language goals by retrieval (stretch)
 
-**Status** Draft · **Scope** stretch, not MVP · **Depends on** RFC-0001, RFC-0003
+**Status** Draft (not built) · **Scope** stretch, not MVP · **Depends on** RFC-0001, RFC-0003
 
 ## Summary
 

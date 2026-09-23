@@ -33,7 +33,9 @@ class BuiltState:
 
 
 def canonical_json(obj: Any) -> str:
-    return json.dumps(obj, sort_keys=True, separators=(",", ":"), ensure_ascii=False, allow_nan=False)
+    return json.dumps(
+        obj, sort_keys=True, separators=(",", ":"), ensure_ascii=False, allow_nan=False
+    )
 
 
 def build_state(facts: dict[str, list[StepFacts]], constraints: list[Constraint]) -> BuiltState:

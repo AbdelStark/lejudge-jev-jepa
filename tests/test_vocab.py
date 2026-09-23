@@ -27,7 +27,12 @@ def test_words_is_pure_and_deterministic(vocab):
 def test_no_numbers_in_facts(vocab):
     rng = np.random.default_rng(0)
     for _ in range(50):
-        st = SymbolicState(rng.random((6, 2)), rng.random((6, 2)) * 0.8 + 0.1, rng.random(6) * 2 * math.pi, rng.normal(size=6) * 3)
+        st = SymbolicState(
+            rng.random((6, 2)),
+            rng.random((6, 2)) * 0.8 + 0.1,
+            rng.random(6) * 2 * math.pi,
+            rng.normal(size=6) * 3,
+        )
         for f in words(st, vocab):
             for k, v in f.to_json().items():
                 if k == "t":
@@ -41,7 +46,12 @@ def test_no_numbers_in_facts(vocab):
 def test_all_words_are_in_vocab(vocab):
     rng = np.random.default_rng(1)
     allowed = vocab.all_words()
-    st = SymbolicState(rng.random((200, 2)), rng.random((200, 2)), rng.random(200) * 2 * math.pi, rng.normal(size=200) * 3)
+    st = SymbolicState(
+        rng.random((200, 2)),
+        rng.random((200, 2)),
+        rng.random(200) * 2 * math.pi,
+        rng.normal(size=200) * 3,
+    )
     for f in words(st, vocab):
         assert f.block in allowed["block"]
         assert f.agent in allowed["agent"]
@@ -58,7 +68,18 @@ def test_grid_cells(vocab):
 
 
 def test_angle_bins(vocab):
-    deg = {0: "upright", 29: "upright", 31: "tilted right", 100: "on its side right", 180: "upside down", 200: "upside down", 240: "on its side left", 300: "tilted left", 359: "upright", -20: "upright"}
+    deg = {
+        0: "upright",
+        29: "upright",
+        31: "tilted right",
+        100: "on its side right",
+        180: "upside down",
+        200: "upside down",
+        240: "on its side left",
+        300: "tilted left",
+        359: "upright",
+        -20: "upright",
+    }
     for d, name in deg.items():
         assert vocab.angle_name(np.array([math.radians(d)]))[0] == name, d
 
@@ -81,7 +102,9 @@ def test_speed_words(vocab):
 
 
 def test_contact_omitted_when_unsure(vocab):
-    st = SymbolicState(np.zeros((2, 2)) + 0.5, np.zeros((2, 2)) + 0.5, np.zeros(2), np.array([0.0, 0.1]))
+    st = SymbolicState(
+        np.zeros((2, 2)) + 0.5, np.zeros((2, 2)) + 0.5, np.zeros(2), np.array([0.0, 0.1])
+    )
     f = words(st, vocab)
     assert f[0].contact is None
     assert "contact" not in f[0].to_json()

@@ -15,16 +15,32 @@ from lejudge.types import (
 
 def test_agent_block_distance_geometry():
     # agent right on the bar's top-centre (body origin) is inside → negative
-    d = agent_block_distance(np.array([0.5, 0.5 + 0.01]), np.array([0.5, 0.5]), np.array(0.0), BLOCK_SCALE)
+    d = agent_block_distance(
+        np.array([0.5, 0.5 + 0.01]), np.array([0.5, 0.5]), np.array(0.0), BLOCK_SCALE
+    )
     assert d < 0
     # agent far away
     d = agent_block_distance(np.array([0.1, 0.1]), np.array([0.5, 0.5]), np.array(0.0), BLOCK_SCALE)
     assert d > 0.3
     # touching: exactly agent_radius above the bar top edge
     y = 0.5 - AGENT_RADIUS - 0.001
-    assert contact_from_geometry(np.array([0.5, y]), np.array([0.5, 0.5]), np.array(0.0), BLOCK_SCALE, AGENT_RADIUS, CONTACT_TOLERANCE)
+    assert contact_from_geometry(
+        np.array([0.5, y]),
+        np.array([0.5, 0.5]),
+        np.array(0.0),
+        BLOCK_SCALE,
+        AGENT_RADIUS,
+        CONTACT_TOLERANCE,
+    )
     y = 0.5 - AGENT_RADIUS - CONTACT_TOLERANCE - 0.002
-    assert not contact_from_geometry(np.array([0.5, y]), np.array([0.5, 0.5]), np.array(0.0), BLOCK_SCALE, AGENT_RADIUS, CONTACT_TOLERANCE)
+    assert not contact_from_geometry(
+        np.array([0.5, y]),
+        np.array([0.5, 0.5]),
+        np.array(0.0),
+        BLOCK_SCALE,
+        AGENT_RADIUS,
+        CONTACT_TOLERANCE,
+    )
 
 
 def test_from_env_geometric_contact():
@@ -52,7 +68,11 @@ def test_wilcoxon_and_holm():
     assert wilcoxon_paired(a, b) < 0.05
     assert wilcoxon_paired(a, a) == 1.0
     adj = holm({"a": 0.01, "b": 0.04, "c": 0.03})
-    assert adj["a"] == pytest.approx(0.03) and adj["c"] == pytest.approx(0.06) and adj["b"] == pytest.approx(0.06)
+    assert (
+        adj["a"] == pytest.approx(0.03)
+        and adj["c"] == pytest.approx(0.06)
+        and adj["b"] == pytest.approx(0.06)
+    )
 
 
 def test_classification_metrics():
@@ -73,7 +93,24 @@ def test_planning_table_and_tests():
     rng = np.random.default_rng(0)
     for cond, pv in (("lewm", 0.6), ("jev", 0.1)):
         for ep in range(30):
-            rows.append({"condition": cond, "constraint_set": "edges", "seed": 0, "episode": ep, "success": bool(rng.random() < 0.5), "violation": bool(rng.random() < pv), "violation_steps": 1, "plan_time_p50_s": 1.0, "plan_time_p95_s": 1.2, "judge_calls": 6, "tokens_in": 100, "abstention_rate": 0.0, "lam": 1.0, "tag": ""})
+            rows.append(
+                {
+                    "condition": cond,
+                    "constraint_set": "edges",
+                    "seed": 0,
+                    "episode": ep,
+                    "success": bool(rng.random() < 0.5),
+                    "violation": bool(rng.random() < pv),
+                    "violation_steps": 1,
+                    "plan_time_p50_s": 1.0,
+                    "plan_time_p95_s": 1.2,
+                    "judge_calls": 6,
+                    "tokens_in": 100,
+                    "abstention_rate": 0.0,
+                    "lam": 1.0,
+                    "tag": "",
+                }
+            )
     df = pd.DataFrame(rows)
     t = planning_table(df)
     assert set(t.condition) == {"lewm", "jev"}

@@ -37,7 +37,9 @@ class GroundTruthState:
     contact: bool
 
     @classmethod
-    def from_env(cls, state: np.ndarray, contact: bool | int | float | None = None, arena: float = ARENA_PX) -> GroundTruthState:
+    def from_env(
+        cls, state: np.ndarray, contact: bool | int | float | None = None, arena: float = ARENA_PX
+    ) -> GroundTruthState:
         """Build from the env's 7-d ``state`` (ax, ay, bx, by, angle, vx, vy).
 
         ``contact`` defaults to the geometric test (agent disc within ``CONTACT_TOLERANCE`` of the
@@ -96,7 +98,9 @@ class SymbolicState:
         return tuple(self.block_angle.shape)
 
     def __getitem__(self, idx: Any) -> SymbolicState:
-        return SymbolicState(self.agent_xy[idx], self.block_xy[idx], self.block_angle[idx], self.contact_logit[idx])
+        return SymbolicState(
+            self.agent_xy[idx], self.block_xy[idx], self.block_angle[idx], self.contact_logit[idx]
+        )
 
     def to_ground_truth(self, contact_band: float = 0.0) -> list[GroundTruthState]:
         """Flatten a 1-d symbolic sequence into ``GroundTruthState`` objects (oracle-on-probes)."""
@@ -165,7 +169,9 @@ def geometric_contact(agent_xy: np.ndarray, block_xy: np.ndarray, angle: np.ndar
     """Vectorised geometric contact flag in normalised units (see ``CONTACT_TOLERANCE``)."""
     from lejudge.constraints.geometry import contact_from_geometry
 
-    return contact_from_geometry(agent_xy, block_xy, angle, BLOCK_SCALE, AGENT_RADIUS, CONTACT_TOLERANCE)
+    return contact_from_geometry(
+        agent_xy, block_xy, angle, BLOCK_SCALE, AGENT_RADIUS, CONTACT_TOLERANCE
+    )
 
 
 def contact_flags_from_states(states: np.ndarray, arena: float = ARENA_PX) -> np.ndarray:

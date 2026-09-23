@@ -73,7 +73,10 @@ class JevCost(nn.Module):
         standardize: standardise ``A`` per batch row before adding the penalty.
         hard_reject: ablation — ``+inf`` instead of ``lam * pen`` when ``pen > 0.7``.
         unjudged: prior for candidates a sequence-level judge did not see: ``"mean"`` | ``"none"``.
-        max_new_steps: cap on newly judged unique step-facts per iteration (rest get the mean prior).
+        max_new_steps: cap on newly judged unique step-facts per iteration, lowest-cost candidates'
+            steps first. Steps over the cap stay unjudged this iteration: a candidate's hard-family
+            penalty uses its known steps only, and a candidate with no known step is held.
+        smooth_temperature: ablation — softmax-weighted mean instead of ``max`` for ``never``.
         record_only: judge for the trace only; never change the cost (demo: stock plan bars).
     """
 
@@ -125,9 +128,11 @@ class JevCost(nn.Module):
         self.record_only = record_only
         self.unjudged = unjudged
         self.max_new_steps = int(max_new_steps)
-        self.local_judge = bool(getattr(judge, "local", False)) or type(judge).__name__ in ("OracleJudge", "KeywordJudge")
+        self.local_judge = bool(getattr(judge, "local", False))
         self._step_cache: dict[tuple[str, str], float] = {}
-        self._judge_id = str(getattr(judge, "model_id", None) or getattr(judge, "name", type(judge).__name__))
+        self._judge_id = str(
+            getattr(judge, "model_id", None) or getattr(judge, "name", type(judge).__name__)
+        )
         self._persist = not self.local_judge
         self._db = get_cache() if self._persist else None
         self._iter = 0
@@ -168,7 +173,11 @@ class JevCost(nn.Module):
             cost = (A - mean) / std
         z = info_dict["predicted_emb"]  # (B, S, H_ctx + horizon, D)
         B, S = A.shape
-        h_ctx = z.shape[2] - info_dict["action_candidates"].shape[2] if "action_candidates" in info_dict else 1
+        h_ctx = (
+            z.shape[2] - info_dict["action_candidates"].shape[2]
+            if "action_candidates" in info_dict
+            else 1
+        )
         for b in range(B):
             zb = z[b][:, h_ctx - 1 :]
             if self.steps is not None:
@@ -210,7 +219,9 @@ class JevCost(nn.Module):
         return cost
 
     # -- penalty computation ---------------------------------------------------------------
-    def _penalties(self, facts_all: list[list[StepFacts]], sym: Any, order: list[int]) -> tuple[list[float], list[bool], dict[str, Any]]:
+    def _penalties(
+        self, facts_all: list[list[StepFacts]], sym: Any, order: list[int]
+    ) -> tuple[list[float], list[bool], dict[str, Any]]:
         S = len(facts_all)
         total = np.zeros(S)
         unsure = np.zeros(S)
@@ -231,7 +242,9 @@ class JevCost(nn.Module):
                     p = res.p[f"e{j}"][c.id]
                     probs[j][c.id] = [float(x) for x in p]
                     total[j] += c.weight * agg_penalty(c.family, p, self.smooth_temperature)
-                    unsure[j] = max(unsure[j], uncertainty_proxy(c.family, p, res.confidence[f"e{j}"][c.id]))
+                    unsure[j] = max(
+                        unsure[j], uncertainty_proxy(c.family, p, res.confidence[f"e{j}"][c.id])
+                    )
             held = unsure > self.tau
             return list(np.where(held, 0.0, total)), [bool(h) for h in held], meta
         # ---- hard families: de-duplicated (t, facts) steps, cached across iterations ------
@@ -247,7 +260,12 @@ class JevCost(nn.Module):
                 keys.append(row)
             # first level: in-process dict; second level: persistent stepfacts table shared by every run
             if self._db is not None:
-                lookup = {(c.id, k): self._db.step_key(self._judge_id, BANK_VERSION, c.text, c.family, k) for c in hard for k in uniq if (c.id, k) not in self._step_cache}
+                lookup = {
+                    (c.id, k): self._db.step_key(self._judge_id, BANK_VERSION, c.text, c.family, k)
+                    for c in hard
+                    for k in uniq
+                    if (c.id, k) not in self._step_cache
+                }
                 if lookup:
                     found = self._db.get_steps(list(lookup.values()))
                     for (cid, k), sk in lookup.items():
@@ -276,7 +294,16 @@ class JevCost(nn.Module):
                         val = float(p[0]) if p else float("nan")
                         self._step_cache[(c.id, k)] = val
                         if self._db is not None and not np.isnan(val) and not res.failed:
-                            rows.append((self._db.step_key(self._judge_id, BANK_VERSION, c.text, c.family, k), self._judge_id, BANK_VERSION, val))
+                            rows.append(
+                                (
+                                    self._db.step_key(
+                                        self._judge_id, BANK_VERSION, c.text, c.family, k
+                                    ),
+                                    self._judge_id,
+                                    BANK_VERSION,
+                                    val,
+                                )
+                            )
                 if rows:
                     self._db.put_steps(rows)
             for j in range(S):
@@ -309,7 +336,11 @@ class JevCost(nn.Module):
                         continue
                     short[j] += c.weight * agg_penalty(c.family, p, self.smooth_temperature)
                     unsure[j] = max(unsure[j], uncertainty_proxy(c.family, p, conf))
-            prior = float(np.mean([short[j] for j in idx])) if (self.unjudged == "mean" and idx) else 0.0
+            prior = (
+                float(np.mean([short[j] for j in idx]))
+                if (self.unjudged == "mean" and idx)
+                else 0.0
+            )
             for j in range(S):
                 total[j] += short[j] if j in idx else prior
         held = unsure > self.tau
@@ -325,10 +356,37 @@ class JevCost(nn.Module):
     def _record(self, tr: JudgeTrace) -> None:
         self.history.append(tr)
         if self.trace is not None and tr.judged:
-            self.trace.write({"iter": tr.iter, "elites": tr.elites, "costA": tr.costA, "penalty": tr.penalty, "held": tr.held, "facts": tr.facts, "p": tr.p, "judge": tr.judge, "wall_ms": round(tr.wall_ms, 2), "n_candidates": tr.n_candidates, "unique_steps": tr.unique_steps, "new_steps": tr.new_steps, "penalised_fraction": round(tr.penalised_fraction, 4)})
+            self.trace.write(
+                {
+                    "iter": tr.iter,
+                    "elites": tr.elites,
+                    "costA": tr.costA,
+                    "penalty": tr.penalty,
+                    "held": tr.held,
+                    "facts": tr.facts,
+                    "p": tr.p,
+                    "judge": tr.judge,
+                    "wall_ms": round(tr.wall_ms, 2),
+                    "n_candidates": tr.n_candidates,
+                    "unique_steps": tr.unique_steps,
+                    "new_steps": tr.new_steps,
+                    "penalised_fraction": round(tr.penalised_fraction, 4),
+                }
+            )
 
     def stats(self) -> dict[str, Any]:
-        return {"forward_calls": self.calls, "judge_calls": self.judge_calls, "judge_wall_ms": round(self.judge_wall_ms, 1), "tokens_in": self.tokens_in, "tokens_out": self.tokens_out, "held": self.held_total, "judged": self.judged_total, "judge_failures": self.judge_failures, "step_cache_size": len(self._step_cache), "step_db_hits": self.step_db_hits}
+        return {
+            "forward_calls": self.calls,
+            "judge_calls": self.judge_calls,
+            "judge_wall_ms": round(self.judge_wall_ms, 1),
+            "tokens_in": self.tokens_in,
+            "tokens_out": self.tokens_out,
+            "held": self.held_total,
+            "judged": self.judged_total,
+            "judge_failures": self.judge_failures,
+            "step_cache_size": len(self._step_cache),
+            "step_db_hits": self.step_db_hits,
+        }
 
     def reset_stats(self) -> None:
         self.history = []

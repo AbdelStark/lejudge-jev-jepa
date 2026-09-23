@@ -43,7 +43,9 @@ class CachedResponse:
     key: str
 
 
-def cache_key(model_id: str, bank_version: str, canonical_state: str, questions_json: str, uid: str = "") -> str:
+def cache_key(
+    model_id: str, bank_version: str, canonical_state: str, questions_json: str, uid: str = ""
+) -> str:
     h = hashlib.sha256()
     for part in (model_id, bank_version, canonical_state, questions_json, uid):
         h.update(part.encode("utf-8"))
@@ -62,14 +64,22 @@ class Cache:
                 response TEXT, response_model TEXT, latency_ms REAL,
                 input_tokens INTEGER, output_tokens INTEGER, created REAL)"""
         )
-        self._conn.execute("CREATE INDEX IF NOT EXISTS idx_model ON responses(model_id, bank_version)")
+        self._conn.execute(
+            "CREATE INDEX IF NOT EXISTS idx_model ON responses(model_id, bank_version)"
+        )
         # step-level memo for hard-family questions: (model, bank, constraint text, facts json) -> P(true)
-        self._conn.execute("CREATE TABLE IF NOT EXISTS stepfacts (key TEXT PRIMARY KEY, model_id TEXT, bank_version TEXT, p REAL, created REAL)")
+        self._conn.execute(
+            "CREATE TABLE IF NOT EXISTS stepfacts (key TEXT PRIMARY KEY, model_id TEXT, bank_version TEXT, p REAL, created REAL)"
+        )
         self._conn.commit()
 
     @staticmethod
-    def step_key(model_id: str, bank_version: str, constraint_text: str, family: str, facts_json: str) -> str:
-        return hashlib.sha256("\x00".join((model_id, bank_version, family, constraint_text, facts_json)).encode()).hexdigest()
+    def step_key(
+        model_id: str, bank_version: str, constraint_text: str, family: str, facts_json: str
+    ) -> str:
+        return hashlib.sha256(
+            "\x00".join((model_id, bank_version, family, constraint_text, facts_json)).encode()
+        ).hexdigest()
 
     def get_steps(self, keys: list[str]) -> dict[str, float]:
         out: dict[str, float] = {}
@@ -81,7 +91,10 @@ class Cache:
 
     def put_steps(self, rows: list[tuple[str, str, str, float]]) -> None:
         now = time.time()
-        self._conn.executemany("INSERT OR REPLACE INTO stepfacts VALUES (?,?,?,?,?)", [(k, m, b, p, now) for k, m, b, p in rows])
+        self._conn.executemany(
+            "INSERT OR REPLACE INTO stepfacts VALUES (?,?,?,?,?)",
+            [(k, m, b, p, now) for k, m, b, p in rows],
+        )
         self._conn.commit()
 
     def count_steps(self) -> int:
@@ -104,7 +117,9 @@ class Cache:
             key=key,
         )
 
-    def put(self, key: str, model_id: str, bank_version: str, uid: str, resp: CachedResponse) -> None:
+    def put(
+        self, key: str, model_id: str, bank_version: str, uid: str, resp: CachedResponse
+    ) -> None:
         self._conn.execute(
             "INSERT OR REPLACE INTO responses VALUES (?,?,?,?,?,?,?,?,?,?)",
             (
@@ -125,7 +140,11 @@ class Cache:
     def count(self, model_id: str | None = None) -> int:
         if model_id is None:
             return int(self._conn.execute("SELECT COUNT(*) FROM responses").fetchone()[0])
-        return int(self._conn.execute("SELECT COUNT(*) FROM responses WHERE model_id=?", (model_id,)).fetchone()[0])
+        return int(
+            self._conn.execute(
+                "SELECT COUNT(*) FROM responses WHERE model_id=?", (model_id,)
+            ).fetchone()[0]
+        )
 
     def close(self) -> None:
         self._conn.close()

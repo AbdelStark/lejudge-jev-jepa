@@ -21,20 +21,34 @@ def _cell(vocab: Vocab, g: GroundTruthState) -> str:
     return str(vocab.cell_name(vocab.block_centroid(np.array(g.block_xy), np.array(g.block_angle))))
 
 
-def satisfiable(set_name: str, s0: GroundTruthState, goal: GroundTruthState, vocab: Vocab, lib: Library) -> bool:
+def satisfiable(
+    set_name: str, s0: GroundTruthState, goal: GroundTruthState, vocab: Vocab, lib: Library
+) -> bool:
     ok = True
     for cid in lib.sets[set_name]:
         if cid == "centre_avoid":
             ok &= _cell(vocab, s0) != "centre" and _cell(vocab, goal) != "centre"
         elif cid in ("no_contact_first3", "approach_below", "no_push_tilted"):
             ok &= not s0.contact
-        elif cid in ("edges_never", "top_never", "corner_avoid", "agent_bottom_only", "stay_left_half", "no_upside_down", "upright_always"):
+        elif cid in (
+            "edges_never",
+            "top_never",
+            "corner_avoid",
+            "agent_bottom_only",
+            "stay_left_half",
+            "no_upside_down",
+            "upright_always",
+        ):
             c = lib.get(cid)
-            ok &= not check(c, [s0, s0], vocab).episode and not check(c, [goal, goal], vocab).episode
+            ok &= (
+                not check(c, [s0, s0], vocab).episode and not check(c, [goal, goal], vocab).episode
+            )
     return bool(ok)
 
 
-def in_tension(set_name: str, window: list[GroundTruthState], vocab: Vocab, lib: Library, action_block: int = 5) -> bool:
+def in_tension(
+    set_name: str, window: list[GroundTruthState], vocab: Vocab, lib: Library, action_block: int = 5
+) -> bool:
     """The expert trajectory (env-step states from start to goal) violates at least one
     constraint of the set at the planner's cadence, excluding the start and goal frames."""
     cadence = window[::action_block]
@@ -55,5 +69,9 @@ def in_tension(set_name: str, window: list[GroundTruthState], vocab: Vocab, lib:
     return False
 
 
-def relevant(set_name: str, window: list[GroundTruthState], vocab: Vocab, lib: Library, action_block: int = 5) -> bool:
-    return satisfiable(set_name, window[0], window[-1], vocab, lib) and in_tension(set_name, window, vocab, lib, action_block)
+def relevant(
+    set_name: str, window: list[GroundTruthState], vocab: Vocab, lib: Library, action_block: int = 5
+) -> bool:
+    return satisfiable(set_name, window[0], window[-1], vocab, lib) and in_tension(
+        set_name, window, vocab, lib, action_block
+    )

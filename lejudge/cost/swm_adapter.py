@@ -65,7 +65,9 @@ def preprocess_pixels(pixels: np.ndarray | torch.Tensor) -> torch.Tensor:
         x = x.unsqueeze(0)
     x = x.permute(0, 3, 1, 2).float() / 255.0
     if x.shape[-2:] != (224, 224):
-        x = torch.nn.functional.interpolate(x, size=(224, 224), mode="bilinear", antialias=True, align_corners=False)
+        x = torch.nn.functional.interpolate(
+            x, size=(224, 224), mode="bilinear", antialias=True, align_corners=False
+        )
     return (x - IMAGENET_MEAN) / IMAGENET_STD
 
 
@@ -77,7 +79,9 @@ def _tv_transform():
         [
             transforms.ToImage(),
             transforms.ToDtype(torch.float32, scale=True),
-            transforms.Normalize(mean=IMAGENET_MEAN.flatten().tolist(), std=IMAGENET_STD.flatten().tolist()),
+            transforms.Normalize(
+                mean=IMAGENET_MEAN.flatten().tolist(), std=IMAGENET_STD.flatten().tolist()
+            ),
             transforms.Resize(size=224),
         ]
     )
@@ -130,10 +134,17 @@ class ActionScaler:
         return cls(np.asarray(d["mean"], dtype=np.float64), np.asarray(d["std"], dtype=np.float64))
 
 
-def make_world(num_envs: int, max_episode_steps: int = 100, image_shape: tuple[int, int] = (224, 224)) -> Any:
+def make_world(
+    num_envs: int, max_episode_steps: int = 100, image_shape: tuple[int, int] = (224, 224)
+) -> Any:
     import stable_worldmodel as swm
 
-    return swm.World("swm/PushT-v1", num_envs=num_envs, image_shape=image_shape, max_episode_steps=max_episode_steps)
+    return swm.World(
+        "swm/PushT-v1",
+        num_envs=num_envs,
+        image_shape=image_shape,
+        max_episode_steps=max_episode_steps,
+    )
 
 
 @dataclass
@@ -149,7 +160,9 @@ class PlanSpec:
     var_scale: float = 1.0
     seed: int = 1234
     device: str | None = None
-    select: str = "mean"  # "mean" (stable-worldmodel default) | "best" (lowest-cost sampled candidate)
+    select: str = (
+        "mean"  # "mean" (stable-worldmodel default) | "best" (lowest-cost sampled candidate)
+    )
     extra: dict[str, Any] = field(default_factory=dict)
 
     @classmethod
@@ -163,7 +176,9 @@ class PlanSpec:
         return {k: v for k, v in self.__dict__.items() if k != "extra"}
 
 
-def make_policy(cost: Any, spec: PlanSpec, scaler: ActionScaler, callbacks: list[Any] | None = None) -> Any:
+def make_policy(
+    cost: Any, spec: PlanSpec, scaler: ActionScaler, callbacks: list[Any] | None = None
+) -> Any:
     """Build ``WorldModelPolicy(CEMSolver(cost))`` with the frozen transforms and scaler."""
     import stable_worldmodel as swm
     from stable_worldmodel.planning import CEMSolver
@@ -189,7 +204,12 @@ def make_policy(cost: Any, spec: PlanSpec, scaler: ActionScaler, callbacks: list
     tf = _tv_transform()
     if spec.select == "best":
         solver = BestSampleCEMSolver(solver)
-    return swm.policy.WorldModelPolicy(solver=solver, config=config, process={"action": scaler}, transform={"pixels": tf, "goal": tf})
+    return swm.policy.WorldModelPolicy(
+        solver=solver,
+        config=config,
+        process={"action": scaler},
+        transform={"pixels": tf, "goal": tf},
+    )
 
 
 def goal_mse_objective() -> Any:

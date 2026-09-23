@@ -1,6 +1,8 @@
 # RFC-0004 — JevCost and planner integration
 
-**Status** Draft · **Scope** MVP · **Depends on** RFC-0003
+**Status** Implemented, amended 2026-09-22 · **Scope** MVP · **Depends on** RFC-0003
+
+> **Amendment (2026-09-22, logged in `docs/DECISIONS.md` and `docs/PREREG.md` before any Jev result on the study sets).** The shortlist design below was tested with the oracle judge and could not change plans: the CEM refits on its top 30 while only 16 candidates were judged, on the last 3 of 30 iterations. The implementation judges every candidate: hard-family steps are de-duplicated into unique `(t, facts)` keys and memoised; soft constraints keep the K shortlist with a mean prior; iterations 0, 5, …, 25 and 29 are judged. This document is kept as written for the record.
 
 ## Summary
 

@@ -22,6 +22,11 @@ m0:
 
 report:
 	$(LEJUDGE) report --out paper/figures
+	@# README figures are copies of the paper figures, so the two can never disagree
+	cp paper/figures/paper/fig_decomposition.png docs/assets/error_decomposition.png
+	cp paper/figures/paper/fig_paraphrase_heatmap.png docs/assets/paraphrase_heatmap.png
+	cp paper/figures/paper/fig_forest_study1.png docs/assets/study1_success_vs_violation.png
+	cp paper/figures/paper/fig_forest_study2.png docs/assets/study2_success_vs_violation.png
 
 paper: report
 	$(PY) paper/fill.py

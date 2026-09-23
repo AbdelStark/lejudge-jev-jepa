@@ -1,6 +1,6 @@
 # RFC-0007 — Demo Space
 
-**Status** Draft · **Scope** MVP · **Depends on** RFC-0004
+**Status** Implemented locally (Gradio app and clip); not deployed as a public Space · **Scope** MVP · **Depends on** RFC-0004
 
 ## Summary
 

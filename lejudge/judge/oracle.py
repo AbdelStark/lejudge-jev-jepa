@@ -10,6 +10,8 @@ from lejudge.vocab.pusht import Vocab
 
 
 class OracleJudge:
+    local = True  # free and deterministic: JevCost judges every candidate's full sequence directly
+
     def __init__(self, vocab: Vocab, on_probes: bool = False):
         self.vocab = vocab
         self.on_probes = on_probes
@@ -23,7 +25,9 @@ class OracleJudge:
         states: dict[str, list[GroundTruthState]] | None = None,
     ) -> JudgeResult:
         if states is None:
-            raise ValueError("OracleJudge needs `states` (index 0 = current state, then one per fact)")
+            raise ValueError(
+                "OracleJudge needs `states` (index 0 = current state, then one per fact)"
+            )
         built = build_state(facts, constraints)
         specs = plan_questions(built, constraints)
         p: dict[str, dict[str, list[float]]] = {}
@@ -49,6 +53,18 @@ class OracleJudge:
                     p[k][c.id] = vec
                     conf[k][c.id] = 1.0
                 else:
-                    p[k][c.id] = [0.0] * (2 * len(seq))
-                    conf[k][c.id] = None
-        return JudgeResult(p=p, confidence=conf, latency_ms=0.0, input_tokens=0, output_tokens=0, response_model=self.name, cache_hit=True, n_calls=0, judge_name=self.name, keys=[s.key for s in specs])
+                    # No shipped constraint uses temporal_before; an all-zero vector would read as
+                    # "maximum penalty" downstream, which is wrong for a ground-truth reference.
+                    raise NotImplementedError(f"no oracle for family {c.family!r} ({c.id})")
+        return JudgeResult(
+            p=p,
+            confidence=conf,
+            latency_ms=0.0,
+            input_tokens=0,
+            output_tokens=0,
+            response_model=self.name,
+            cache_hit=True,
+            n_calls=0,
+            judge_name=self.name,
+            keys=[s.key for s in specs],
+        )

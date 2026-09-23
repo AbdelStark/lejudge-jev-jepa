@@ -32,7 +32,10 @@ def gs(ax=0.5, ay=0.9, bx=0.5, by=0.5, ang=0.0, contact=False):
 @pytest.fixture
 def sample(vocab, library):
     seq = [gs(), gs(bx=0.45, contact=True), gs(bx=0.06, ax=0.3, ay=0.5, contact=True)]
-    facts = {"cand_a": words(SymbolicState.from_ground_truth(seq), vocab), "cand_b": words(SymbolicState.from_ground_truth([gs(), gs(), gs()]), vocab)}
+    facts = {
+        "cand_a": words(SymbolicState.from_ground_truth(seq), vocab),
+        "cand_b": words(SymbolicState.from_ground_truth([gs(), gs(), gs()]), vocab),
+    }
     states = {"cand_a": seq, "cand_b": [gs(), gs(), gs()]}
     cs = library.set("edges+upright") + [library.get("gentle")]
     return facts, states, cs
@@ -176,7 +179,12 @@ class _FakeClient:
         answers = {}
         for k, q in questions.items():
             if q.type == "score":
-                answers[k] = _FakeAnswer(type="score", score=3.0, confidence=0.8, probabilities={0: 0.0, 1: 0.0, 2: 0.2, 3: 0.6, 4: 0.2})
+                answers[k] = _FakeAnswer(
+                    type="score",
+                    score=3.0,
+                    confidence=0.8,
+                    probabilities={0: 0.0, 1: 0.0, 2: 0.2, 3: 0.6, 4: 0.2},
+                )
             else:
                 answers[k] = _FakeAnswer(type="noul", noul=0.8 if k.endswith("_2") else 0.1)
         return _FakeResp(answers, self.model)
@@ -244,7 +252,14 @@ def test_trace_roundtrip(tmp_path):
     w = TraceWriter("run_x", root=tmp_path)
     w.open_episode(3)
     w.context = {"cond": "jev", "set": "edges", "seed": 0}
-    w.write({"step": 1, "iter": 2, "penalty": np.array([0.1, 0.2]), "judge": {"p": {"k1": {"c1": [0.1, 0.9]}}}})
+    w.write(
+        {
+            "step": 1,
+            "iter": 2,
+            "penalty": np.array([0.1, 0.2]),
+            "judge": {"p": {"k1": {"c1": [0.1, 0.9]}}},
+        }
+    )
     w.close()
     recs = TraceWriter.read(tmp_path / "run_x" / "ep_3.jsonl")
     assert recs[0]["episode"] == 3 and recs[0]["cond"] == "jev" and recs[0]["penalty"] == [0.1, 0.2]

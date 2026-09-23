@@ -14,7 +14,9 @@ def test_spatial_filter(vocab, library):
     around = [start] + [gs(bx=0.2, by=0.8)] * 10 + [goal]
     assert in_tension("spatial", through_centre, vocab, library)
     assert not in_tension("spatial", around, vocab, library)
-    assert relevant("spatial", through_centre, vocab, library) and not relevant("spatial", around, vocab, library)
+    assert relevant("spatial", through_centre, vocab, library) and not relevant(
+        "spatial", around, vocab, library
+    )
 
 
 def test_temporal_filter(vocab, library):

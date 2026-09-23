@@ -1,6 +1,6 @@
 # RFC-0002 — Constraint library and oracle checkers
 
-**Status** Draft · **Scope** MVP · **Depends on** RFC-0001
+**Status** Implemented · **Scope** MVP · **Depends on** RFC-0001
 
 ## Summary
 

@@ -74,13 +74,22 @@ class JevJudge:
                 qs = {s.key: to_sdk(s) for s in chunk}
                 resp = client.system_one(state=built.state, questions=qs, model=self.model)
                 if not resp.model.startswith(self.pin_prefix):
-                    raise RuntimeError(f"response model {resp.model!r} is not pinned to {self.pin_prefix}")
+                    raise RuntimeError(
+                        f"response model {resp.model!r} is not pinned to {self.pin_prefix}"
+                    )
                 payload = {k: _answer_json(a) for k, a in resp.answers.items()}
                 usage = resp.usage
-                return payload, resp.model, int(usage.input_tokens or 0), int(usage.output_tokens or 0)
+                return (
+                    payload,
+                    resp.model,
+                    int(usage.input_tokens or 0),
+                    int(usage.output_tokens or 0),
+                )
 
             try:
-                r = self.caller.call(self.model_id, self.bank_version, state_json, qjson, fn, uid=self.uid)
+                r = self.caller.call(
+                    self.model_id, self.bank_version, state_json, qjson, fn, uid=self.uid
+                )
             except CacheMiss:
                 raise
             except Exception:  # noqa: BLE001 — judge failure never blocks planning
@@ -121,5 +130,10 @@ def _answer_json(a: Any) -> dict[str, Any]:
             "probabilities": {str(k): float(v) for k, v in a.probabilities.items()},
         }
     if t == "choice":
-        return {"type": "choice", "choice": a.choice, "confidence": float(a.confidence), "probabilities": dict(a.probabilities)}
+        return {
+            "type": "choice",
+            "choice": a.choice,
+            "confidence": float(a.confidence),
+            "probabilities": dict(a.probabilities),
+        }
     raise TypeError(f"unknown answer type {t!r}")

@@ -75,7 +75,9 @@ def block_edge(seq: list[GroundTruthState], params: dict[str, Any], vocab: Vocab
 
 
 @register("block_in_cells")
-def block_in_cells(seq: list[GroundTruthState], params: dict[str, Any], vocab: Vocab) -> ViolationTrace:
+def block_in_cells(
+    seq: list[GroundTruthState], params: dict[str, Any], vocab: Vocab
+) -> ViolationTrace:
     """Violation when the block centroid is in any of ``params['cells']``.
 
     ``centroid_x_min``, when given, overrides the cell list with a half-plane test so the
@@ -91,7 +93,9 @@ def block_in_cells(seq: list[GroundTruthState], params: dict[str, Any], vocab: V
 
 
 @register("agent_in_cells")
-def agent_in_cells(seq: list[GroundTruthState], params: dict[str, Any], vocab: Vocab) -> ViolationTrace:
+def agent_in_cells(
+    seq: list[GroundTruthState], params: dict[str, Any], vocab: Vocab
+) -> ViolationTrace:
     s = _sym(seq)
     cells = set(params.get("cells", []))
     names = vocab.cell_name(s.agent_xy)
@@ -99,7 +103,9 @@ def agent_in_cells(seq: list[GroundTruthState], params: dict[str, Any], vocab: V
 
 
 @register("block_angle_in")
-def block_angle_in(seq: list[GroundTruthState], params: dict[str, Any], vocab: Vocab) -> ViolationTrace:
+def block_angle_in(
+    seq: list[GroundTruthState], params: dict[str, Any], vocab: Vocab
+) -> ViolationTrace:
     s = _sym(seq)
     bins = set(params.get("bins", []))
     names = vocab.angle_name(s.block_angle)
@@ -107,7 +113,9 @@ def block_angle_in(seq: list[GroundTruthState], params: dict[str, Any], vocab: V
 
 
 @register("block_angle_not_in")
-def block_angle_not_in(seq: list[GroundTruthState], params: dict[str, Any], vocab: Vocab) -> ViolationTrace:
+def block_angle_not_in(
+    seq: list[GroundTruthState], params: dict[str, Any], vocab: Vocab
+) -> ViolationTrace:
     s = _sym(seq)
     bins = set(params.get("bins", []))
     names = vocab.angle_name(s.block_angle)
@@ -115,7 +123,9 @@ def block_angle_not_in(seq: list[GroundTruthState], params: dict[str, Any], voca
 
 
 @register("contact_while_angle_in")
-def contact_while_angle_in(seq: list[GroundTruthState], params: dict[str, Any], vocab: Vocab) -> ViolationTrace:
+def contact_while_angle_in(
+    seq: list[GroundTruthState], params: dict[str, Any], vocab: Vocab
+) -> ViolationTrace:
     s = _sym(seq)
     bins = set(params.get("bins", []))
     names = vocab.angle_name(s.block_angle)
@@ -124,7 +134,9 @@ def contact_while_angle_in(seq: list[GroundTruthState], params: dict[str, Any], 
 
 
 @register("first_contact_not_below")
-def first_contact_not_below(seq: list[GroundTruthState], params: dict[str, Any], vocab: Vocab) -> ViolationTrace:
+def first_contact_not_below(
+    seq: list[GroundTruthState], params: dict[str, Any], vocab: Vocab
+) -> ViolationTrace:
     """Violation at the first contact step if the agent is not below the block centroid.
 
     Screen y grows downward, so "below" means ``agent_y > block_centroid_y``. Steps after
@@ -135,7 +147,11 @@ def first_contact_not_below(seq: list[GroundTruthState], params: dict[str, Any],
     centroid = vocab.block_centroid(s.block_xy, s.block_angle)
     flags = np.zeros(len(seq), dtype=bool)
     for i in range(1, len(seq)):
-        if seq[i].contact and not seq[i - 1].contact or (i == 1 and seq[0].contact and seq[1].contact):
+        if (
+            seq[i].contact
+            and not seq[i - 1].contact
+            or (i == 1 and seq[0].contact and seq[1].contact)
+        ):
             flags[i] = not (seq[i].agent_xy[1] > centroid[i, 1])
             break
     return _trace(flags)
@@ -155,7 +171,9 @@ def block_fast(seq: list[GroundTruthState], params: dict[str, Any], vocab: Vocab
 
 
 @register("contact_in_steps")
-def contact_in_steps(seq: list[GroundTruthState], params: dict[str, Any], vocab: Vocab) -> ViolationTrace:
+def contact_in_steps(
+    seq: list[GroundTruthState], params: dict[str, Any], vocab: Vocab
+) -> ViolationTrace:
     """Violation when there is contact at any of the listed steps (1-indexed, t=1 is the
     first imagined step)."""
     steps_set = {int(t) for t in params.get("steps", [1, 2, 3])}

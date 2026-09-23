@@ -1,6 +1,6 @@
 # RFC-0003 — Judge: state, question bank, aggregation and baselines
 
-**Status** Draft · **Scope** MVP · **Depends on** RFC-0001, RFC-0002
+**Status** Implemented · **Scope** MVP · **Depends on** RFC-0001, RFC-0002
 
 ## Summary
 

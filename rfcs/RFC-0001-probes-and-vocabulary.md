@@ -1,6 +1,6 @@
 # RFC-0001 — Probes and vocabulary
 
-**Status** Draft · **Scope** MVP · **Depends on** —
+**Status** Implemented · **Scope** MVP · **Depends on** —
 
 ## Summary
 

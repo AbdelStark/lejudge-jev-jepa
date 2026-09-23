@@ -1,6 +1,6 @@
 # RFC-0008 — Reproducibility: caching, tracing, pinning
 
-**Status** Draft · **Scope** MVP · **Depends on** — (read first)
+**Status** Implemented · **Scope** MVP · **Depends on** — (read first)
 
 ## Summary
 

@@ -80,7 +80,11 @@ class Vocab:
 
     def speed_name(self, displacement: np.ndarray) -> np.ndarray:
         d = np.asarray(displacement, dtype=np.float64)
-        out = np.where(d < self.speed_thresholds["still"], "still", np.where(d < self.speed_thresholds["slow"], "slow", "fast"))
+        out = np.where(
+            d < self.speed_thresholds["still"],
+            "still",
+            np.where(d < self.speed_thresholds["slow"], "slow", "fast"),
+        )
         return out.astype(object)
 
 
@@ -98,7 +102,9 @@ def load_vocab(name: str = "pusht@1") -> Vocab:
         wall_inset=float(raw["wall_inset"]),
         edge_margin=float(raw["edge_margin"]),
         block_scale=float(raw["block_scale"]),
-        angle_bins_deg={str(k): (float(v[0]), float(v[1])) for k, v in raw["angle_bins_deg"].items()},
+        angle_bins_deg={
+            str(k): (float(v[0]), float(v[1])) for k, v in raw["angle_bins_deg"].items()
+        },
         speed_thresholds={str(k): float(v) for k, v in raw["speed_thresholds"].items()},
         contact_logit_band=float(raw["contact_logit_band"]),
     )

@@ -44,15 +44,42 @@ RULES: list[Rule] = [
     Rule(r"\bT\b.*\btouch\b.*\bleft or right edge\b", _edge("left edge", "right edge")),
     Rule(r"\bT\b.*\bnever reach the top edge\b", _edge("top edge")),
     Rule(r"\bT\b.*\bout of the centre cell\b", _cells("block", "centre")),
-    Rule(r"\bagent\b.*\bnot enter the top row\b", _cells("agent", "top-left", "top-centre", "top-right")),
+    Rule(
+        r"\bagent\b.*\bnot enter the top row\b",
+        _cells("agent", "top-left", "top-centre", "top-right"),
+    ),
     Rule(r"\bT\b.*\broughly upright\b", lambda f, t: f.block_angle != "upright", "always"),
     Rule(r"\bflip the T upside down\b", _angle("upside down")),
-    Rule(r"\bpush the block while it is on its side\b", lambda f, t: bool(f.contact) and f.block_angle in {"on its side left", "on its side right"}),
-    Rule(r"\bApproach the block from below\b", lambda f, t: bool(f.contact) and f.agent in {"top-left", "top-centre", "top-right"}, "always"),
+    Rule(
+        r"\bpush the block while it is on its side\b",
+        lambda f, t: bool(f.contact) and f.block_angle in {"on its side left", "on its side right"},
+    ),
+    Rule(
+        r"\bApproach the block from below\b",
+        lambda f, t: bool(f.contact) and f.agent in {"top-left", "top-centre", "top-right"},
+        "always",
+    ),
     Rule(r"\bgentle\b.*\bslowly\b", lambda f, t: f.block_speed == "fast", "soft"),
-    Rule(r"\bblock in the left half\b", _cells("block", "top-centre", "centre", "bottom-centre", "top-right", "centre-right", "bottom-right"), "always"),
-    Rule(r"\btouch the block during the first three steps\b", lambda f, t: bool(f.contact) and t <= 3),
-    Rule(r"\bout of all four corners with the block\b", _cells("block", "top-left", "top-right", "bottom-left", "bottom-right")),
+    Rule(
+        r"\bblock in the left half\b",
+        _cells(
+            "block",
+            "top-centre",
+            "centre",
+            "bottom-centre",
+            "top-right",
+            "centre-right",
+            "bottom-right",
+        ),
+        "always",
+    ),
+    Rule(
+        r"\btouch the block during the first three steps\b", lambda f, t: bool(f.contact) and t <= 3
+    ),
+    Rule(
+        r"\bout of all four corners with the block\b",
+        _cells("block", "top-left", "top-right", "bottom-left", "bottom-right"),
+    ),
 ]
 
 
@@ -65,6 +92,7 @@ def match_rule(text: str) -> Rule | None:
 
 class KeywordJudge:
     name = "keyword"
+    local = True  # free and deterministic: JevCost judges every candidate's full sequence directly
 
     def judge(
         self,
@@ -98,4 +126,15 @@ class KeywordJudge:
                 else:  # temporal_before: no keyword implementation
                     p[k][c.id] = [0.0] * (2 * len(seq))
                 conf[k][c.id] = None
-        return JudgeResult(p=p, confidence=conf, latency_ms=0.0, input_tokens=0, output_tokens=0, response_model="keyword@1", cache_hit=True, n_calls=0, judge_name=self.name, keys=[s.key for s in specs])
+        return JudgeResult(
+            p=p,
+            confidence=conf,
+            latency_ms=0.0,
+            input_tokens=0,
+            output_tokens=0,
+            response_model="keyword@1",
+            cache_hit=True,
+            n_calls=0,
+            judge_name=self.name,
+            keys=[s.key for s in specs],
+        )

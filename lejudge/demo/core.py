@@ -46,7 +46,9 @@ class PlanResult:
     frames: list[np.ndarray]
     states: list[GroundTruthState]
     success: bool
-    probs: dict[str, list[float]]  # constraint text -> per-step p of the chosen elite (last judged iter)
+    probs: dict[
+        str, list[float]
+    ]  # constraint text -> per-step p of the chosen elite (last judged iter)
     penalties: dict[str, float]
     state_json: str
     call: dict[str, Any]
@@ -96,18 +98,69 @@ class DemoBackend:
         out = []
         for i, ln in enumerate(lines):
             ln = ln[:MAX_CHARS]
-            fam = "soft" if any(w in ln.lower() for w in ("gentle", "slowly", "softly", "slow ")) else ("always" if any(w in ln.lower() for w in ("keep the t", "stay ", "always", "must remain", "approach")) and "out of" not in ln.lower() and "away" not in ln.lower() and "off" not in ln.lower() else "never")
+            fam = (
+                "soft"
+                if any(w in ln.lower() for w in ("gentle", "slowly", "softly", "slow "))
+                else (
+                    "always"
+                    if any(
+                        w in ln.lower()
+                        for w in ("keep the t", "stay ", "always", "must remain", "approach")
+                    )
+                    and "out of" not in ln.lower()
+                    and "away" not in ln.lower()
+                    and "off" not in ln.lower()
+                    else "never"
+                )
+            )
             out.append(Constraint(text=ln, family=fam, id=f"user{i + 1}", weight=1.0))
         return out
 
-    def plan(self, seed: int, constraints: list[Constraint], lam: float = 1.0, tau: float = 0.5, mode: str = "jev", record_only: bool = False) -> PlanResult:
+    def plan(
+        self,
+        seed: int,
+        constraints: list[Constraint],
+        lam: float = 1.0,
+        tau: float = 0.5,
+        mode: str = "jev",
+        record_only: bool = False,
+    ) -> PlanResult:
         self.load()
-        model, probe, vocab, world = self._res["model"], self._res["probe"], self._res["vocab"], self._res["world"]
+        model, probe, vocab, world = (
+            self._res["model"],
+            self._res["probe"],
+            self._res["vocab"],
+            self._res["world"],
+        )
         state, goal_state, _ = self.episode_spec(seed)
-        spec = PlanSpec.from_config(self._res["config"], seed=1234 + seed, device=self.device, num_samples=self.num_samples, n_steps=self.n_steps)
+        spec = PlanSpec.from_config(
+            self._res["config"],
+            seed=1234 + seed,
+            device=self.device,
+            num_samples=self.num_samples,
+            n_steps=self.n_steps,
+        )
         judge = JevJudge() if mode == "jev" else OracleJudge(vocab, on_probes=True)
-        objective = JevCost(goal_mse_objective(), probe, vocab, constraints, judge, lam=lam, K=self.K, tau=tau, mode="every_k", n_iters=spec.n_steps, judge_every=3, record_only=record_only)
-        policy = make_policy(shooting_cost(model, objective), spec, self._res["data"].scaler, callbacks=[objective.callback()])
+        objective = JevCost(
+            goal_mse_objective(),
+            probe,
+            vocab,
+            constraints,
+            judge,
+            lam=lam,
+            K=self.K,
+            tau=tau,
+            mode="every_k",
+            n_iters=spec.n_steps,
+            judge_every=3,
+            record_only=record_only,
+        )
+        policy = make_policy(
+            shooting_cost(model, objective),
+            spec,
+            self._res["data"].scaler,
+            callbacks=[objective.callback()],
+        )
         world.set_policy(policy)
         world.reset(seed=0, options=[{"state": state, "goal_state": goal_state}])
         frames = [world.infos["pixels"][0, -1].copy()]
@@ -139,8 +192,24 @@ class DemoBackend:
                 pens[c.text] = penalty(c.family, [x for x in p if x == x]) if p else 0.0
             held = bool(tr.held[j])
             facts = tr.facts[key]
-            state_json = json.dumps({"constraints": {f"c{i + 1}": c.text for i, c in enumerate(constraints)}, "candidates": {"k1": facts}}, indent=1)
-            call = {k: (tr.judge or {}).get(k) for k in ("latency_ms", "input_tokens", "output_tokens", "response_model", "cache_hit", "n_calls")}
+            state_json = json.dumps(
+                {
+                    "constraints": {f"c{i + 1}": c.text for i, c in enumerate(constraints)},
+                    "candidates": {"k1": facts},
+                },
+                indent=1,
+            )
+            call = {
+                k: (tr.judge or {}).get(k)
+                for k in (
+                    "latency_ms",
+                    "input_tokens",
+                    "output_tokens",
+                    "response_model",
+                    "cache_hit",
+                    "n_calls",
+                )
+            }
             call["all_steps_memoised"] = tr.judge is None
             call["judged_iterations"] = len(judged)
             call["unique_steps_last_iter"] = tr.unique_steps
@@ -150,9 +219,13 @@ class DemoBackend:
             lib_c = next((x for x in self._res["lib"].constraints if x.text == c.text), None)
             if lib_c is not None:
                 oracle[c.text] = bool(check(lib_c, states, vocab).episode)
-        return PlanResult(frames, states, success, probs, pens, state_json, call, facts, oracle, plan_time, held)
+        return PlanResult(
+            frames, states, success, probs, pens, state_json, call, facts, oracle, plan_time, held
+        )
 
-    def plan_pair(self, seed: int, text: str, lam: float = 1.0, tau: float = 0.5, mode: str = "jev") -> tuple[PlanResult, PlanResult]:
+    def plan_pair(
+        self, seed: int, text: str, lam: float = 1.0, tau: float = 0.5, mode: str = "jev"
+    ) -> tuple[PlanResult, PlanResult]:
         cs = self.parse_constraints(text)
         stock = self.plan(seed, cs, lam=0.0, tau=tau, mode=mode, record_only=True)
         ours = self.plan(seed, cs, lam=lam, tau=tau, mode=mode)
@@ -165,7 +238,14 @@ class DemoBackend:
         h = hashlib.sha1(text.strip().encode()).hexdigest()[:10]
         return GALLERY_DIR / f"s{seed}_{h}.npz"
 
-    def precompute(self, seeds: range, presets: list[str], lam: float = 1.0, tau: float = 0.5, mode: str = "jev") -> None:
+    def precompute(
+        self,
+        seeds: range,
+        presets: list[str],
+        lam: float = 1.0,
+        tau: float = 0.5,
+        mode: str = "jev",
+    ) -> None:
         GALLERY_DIR.mkdir(parents=True, exist_ok=True)
         for s in seeds:
             for p in presets:
@@ -186,7 +266,18 @@ def save_pair(path: Path, stock: PlanResult, ours: PlanResult) -> None:
 
 
 def _meta(r: PlanResult) -> dict[str, Any]:
-    return {"success": r.success, "probs": r.probs, "penalties": r.penalties, "state_json": r.state_json, "call": r.call, "facts": r.facts, "oracle": r.oracle, "plan_time_s": r.plan_time_s, "held": r.held, "states": [s.to_json() for s in r.states]}
+    return {
+        "success": r.success,
+        "probs": r.probs,
+        "penalties": r.penalties,
+        "state_json": r.state_json,
+        "call": r.call,
+        "facts": r.facts,
+        "oracle": r.oracle,
+        "plan_time_s": r.plan_time_s,
+        "held": r.held,
+        "states": [s.to_json() for s in r.states],
+    }
 
 
 def load_pair(path: Path) -> tuple[PlanResult, PlanResult]:
@@ -194,6 +285,18 @@ def load_pair(path: Path) -> tuple[PlanResult, PlanResult]:
     meta = json.loads(str(z["meta"]))
 
     def mk(frames: np.ndarray, m: dict[str, Any]) -> PlanResult:
-        return PlanResult(list(frames), [GroundTruthState.from_json(s) for s in m["states"]], m["success"], m["probs"], m["penalties"], m["state_json"], m["call"], m["facts"], m["oracle"], m["plan_time_s"], m.get("held", False))
+        return PlanResult(
+            list(frames),
+            [GroundTruthState.from_json(s) for s in m["states"]],
+            m["success"],
+            m["probs"],
+            m["penalties"],
+            m["state_json"],
+            m["call"],
+            m["facts"],
+            m["oracle"],
+            m["plan_time_s"],
+            m.get("held", False),
+        )
 
     return mk(z["stock_frames"], meta["stock"]), mk(z["ours_frames"], meta["ours"])

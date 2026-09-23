@@ -92,7 +92,17 @@ def run_id(cfg: RunConfig) -> str:
     return f"{git_commit()}_{cfg.condition}_{cfg.constraint_set}_s{cfg.seed}_{h}"
 
 
-def sample_episode_specs(data: EpisodeData, n: int, seed: int, goal_offset: int = 25, min_start: int = 0, start_filter: str = "none", constraint_set: str | None = None, vocab: Vocab | None = None, lib: Library | None = None) -> list[EpisodeSpec]:
+def sample_episode_specs(
+    data: EpisodeData,
+    n: int,
+    seed: int,
+    goal_offset: int = 25,
+    min_start: int = 0,
+    start_filter: str = "none",
+    constraint_set: str | None = None,
+    vocab: Vocab | None = None,
+    lib: Library | None = None,
+) -> list[EpisodeSpec]:
     """Deterministic (episode, start) pairs: one per evaluation episode, seeded.
 
     ``start_filter="relevant"`` (Study 2) keeps only windows for which ``constraint_set`` is
@@ -108,7 +118,9 @@ def sample_episode_specs(data: EpisodeData, n: int, seed: int, goal_offset: int 
             n_frames = data.length(e)
             t0 = int(rng.integers(min_start, n_frames - goal_offset - 1))
             ep = data.episode(e)
-            out.append(EpisodeSpec(i, e, t0, ep["state"][t0].copy(), ep["state"][t0 + goal_offset].copy()))
+            out.append(
+                EpisodeSpec(i, e, t0, ep["state"][t0].copy(), ep["state"][t0 + goal_offset].copy())
+            )
         return out
     from lejudge.eval.filters import relevant
 
@@ -129,7 +141,9 @@ def sample_episode_specs(data: EpisodeData, n: int, seed: int, goal_offset: int 
     for i, k in enumerate(picks):
         e, t0 = pool[int(k)]
         ep = data.episode(e)
-        out.append(EpisodeSpec(i, e, t0, ep["state"][t0].copy(), ep["state"][t0 + goal_offset].copy()))
+        out.append(
+            EpisodeSpec(i, e, t0, ep["state"][t0].copy(), ep["state"][t0 + goal_offset].copy())
+        )
     return out
 
 
@@ -155,7 +169,9 @@ def constraints_for(lib: Library, cfg: RunConfig) -> list[Constraint]:
 class Runner:
     """Holds the loaded model/probe/vocab so several runs share them."""
 
-    def __init__(self, device: str | None = None, data_path: str = "artifacts/data/pusht_expert.npz"):
+    def __init__(
+        self, device: str | None = None, data_path: str = "artifacts/data/pusht_expert.npz"
+    ):
         self.config = load_config()
         self.device = device
         self.model = load_lewm(device)
@@ -182,10 +198,17 @@ class Runner:
             self.world = make_world(1, self.max_episode_steps)
         return self.world
 
-    def run(self, cfg: RunConfig, trace_root: Path | str = "artifacts/traces", progress: bool = True) -> pd.DataFrame:
+    def run(
+        self, cfg: RunConfig, trace_root: Path | str = "artifacts/traces", progress: bool = True
+    ) -> pd.DataFrame:
         ecfg = self.config["eval"]
         goal_offset, budget = int(ecfg["goal_offset_steps"]), int(ecfg["eval_budget"])
-        spec = PlanSpec.from_config(self.config, seed=1234 + cfg.seed, device=cfg.device or self.device, **cfg.plan_overrides)
+        spec = PlanSpec.from_config(
+            self.config,
+            seed=1234 + cfg.seed,
+            device=cfg.device or self.device,
+            **cfg.plan_overrides,
+        )
         vocab = self.vocab(cfg.vocab)
         probe = self.probe(cfg.probes)
         constraints = constraints_for(self.lib, cfg)
@@ -194,43 +217,123 @@ class Runner:
         trace = TraceWriter(rid, trace_root)
         base = goal_mse_objective()
         if cfg.condition == "lewm":
-            objective: Any = JevCost(base, probe, vocab, constraints, OracleJudge(vocab, on_probes=True), lam=0.0, n_iters=spec.n_steps, trace=trace)
+            objective: Any = JevCost(
+                base,
+                probe,
+                vocab,
+                constraints,
+                OracleJudge(vocab, on_probes=True),
+                lam=0.0,
+                n_iters=spec.n_steps,
+                trace=trace,
+            )
         else:
-            objective = JevCost(base, probe, vocab, constraints, build_judge(cfg.condition, vocab, cfg), lam=cfg.lam, K=cfg.K, tau=cfg.tau, mode=cfg.mode, n_iters=spec.n_steps, judge_last_n=cfg.judge_last_n, judge_every=cfg.judge_every, steps=cfg.steps, hard_reject=cfg.hard_reject, unjudged=cfg.unjudged, trace=trace)
+            objective = JevCost(
+                base,
+                probe,
+                vocab,
+                constraints,
+                build_judge(cfg.condition, vocab, cfg),
+                lam=cfg.lam,
+                K=cfg.K,
+                tau=cfg.tau,
+                mode=cfg.mode,
+                n_iters=spec.n_steps,
+                judge_last_n=cfg.judge_last_n,
+                judge_every=cfg.judge_every,
+                steps=cfg.steps,
+                hard_reject=cfg.hard_reject,
+                unjudged=cfg.unjudged,
+                trace=trace,
+            )
         cost = shooting_cost(self.model, objective)
         policy = make_policy(cost, spec, self.scaler, callbacks=[objective.callback()])
         world = self._world()
         world.set_policy(policy)
-        specs = sample_episode_specs(self.data, cfg.episodes, cfg.seed, goal_offset, start_filter=cfg.start_filter, constraint_set=cfg.constraint_set, vocab=self.vocab("pusht@1"), lib=self.lib)
+        specs = sample_episode_specs(
+            self.data,
+            cfg.episodes,
+            cfg.seed,
+            goal_offset,
+            start_filter=cfg.start_filter,
+            constraint_set=cfg.constraint_set,
+            vocab=self.vocab("pusht@1"),
+            lib=self.lib,
+        )
         (Path(trace_root) / rid).mkdir(parents=True, exist_ok=True)
-        (Path(trace_root) / rid / "config.json").write_text(json.dumps({"run": cfg.to_json(), "plan": spec.to_json(), "constraints": [c.text for c in constraints], "library_sha256": self.lib.sha256, "bank": BANK_VERSION, "checkpoint": self.config["checkpoint"], "device": str(next(self.model.parameters()).device), "torch": torch.__version__}, indent=2))
+        (Path(trace_root) / rid / "config.json").write_text(
+            json.dumps(
+                {
+                    "run": cfg.to_json(),
+                    "plan": spec.to_json(),
+                    "constraints": [c.text for c in constraints],
+                    "library_sha256": self.lib.sha256,
+                    "bank": BANK_VERSION,
+                    "checkpoint": self.config["checkpoint"],
+                    "device": str(next(self.model.parameters()).device),
+                    "torch": torch.__version__,
+                },
+                indent=2,
+            )
+        )
         rows = []
         t_run = time.time()
         for es in specs:
-            row = self._episode(world, policy, objective, es, cfg, canonical, vocab, trace, budget, rid, spec)
+            row = self._episode(
+                world, policy, objective, es, cfg, canonical, vocab, trace, budget, rid, spec
+            )
             rows.append(row)
             if progress:
-                print(f"[{cfg.condition}/{cfg.constraint_set}/s{cfg.seed}] ep {es.episode + 1}/{cfg.episodes} success={row['success']} viol={row['violation']} plan_p50={row['plan_time_p50_s']:.2f}s judge_calls={row['judge_calls']} ({time.time() - t_run:.0f}s)", flush=True)
+                print(
+                    f"[{cfg.condition}/{cfg.constraint_set}/s{cfg.seed}] ep {es.episode + 1}/{cfg.episodes} success={row['success']} viol={row['violation']} plan_p50={row['plan_time_p50_s']:.2f}s judge_calls={row['judge_calls']} ({time.time() - t_run:.0f}s)",
+                    flush=True,
+                )
         trace.close()
         return pd.DataFrame(rows)
 
-    def _episode(self, world: Any, policy: Any, objective: JevCost, es: EpisodeSpec, cfg: RunConfig, canonical: list[Constraint], vocab: Vocab, trace: TraceWriter, budget: int, rid: str, spec: PlanSpec) -> dict[str, Any]:
+    def _episode(
+        self,
+        world: Any,
+        policy: Any,
+        objective: JevCost,
+        es: EpisodeSpec,
+        cfg: RunConfig,
+        canonical: list[Constraint],
+        vocab: Vocab,
+        trace: TraceWriter,
+        budget: int,
+        rid: str,
+        spec: PlanSpec,
+    ) -> dict[str, Any]:
         trace.open_episode(es.episode)
-        trace.context = {"cond": cfg.condition, "set": cfg.constraint_set, "seed": cfg.seed, "paraphrase": cfg.paraphrase}
+        trace.context = {
+            "cond": cfg.condition,
+            "set": cfg.constraint_set,
+            "seed": cfg.seed,
+            "paraphrase": cfg.paraphrase,
+        }
         objective.reset_stats()
         # fresh policy buffers for a new episode
-        policy._action_buffer = [type(policy._action_buffer[0])(maxlen=policy.flatten_receding_horizon)]
+        policy._action_buffer = [
+            type(policy._action_buffer[0])(maxlen=policy.flatten_receding_horizon)
+        ]
         policy._next_init = None
-        world.reset(seed=int(es.source_episode * 1000 + es.start_step), options=[{"state": es.state, "goal_state": es.goal_state}])
+        world.reset(
+            seed=int(es.source_episode * 1000 + es.start_step),
+            options=[{"state": es.state, "goal_state": es.goal_state}],
+        )
         executed: list[GroundTruthState] = [GroundTruthState.from_env(world.infos["state"][0, -1])]
         plan_times: list[float] = []
         success = False
         step_records = []
         for t in range(budget):
+            replanning = (
+                len(policy._action_buffer[0]) == 0
+            )  # the policy plans when its buffer is empty
             t0 = time.perf_counter()
             action = policy.get_action(world.infos)
             dt = time.perf_counter() - t0
-            if dt > 0.05:  # a replan happened (buffer refill); buffered steps are ~free
+            if replanning:
                 plan_times.append(dt)
                 trace.context["step"] = t
             _, _, term, trunc, world.infos = world.envs.step(action)
@@ -252,7 +355,15 @@ class Runner:
             tr = check(c, cadence, study_vocab)
             viol_flags[c.id] = bool(tr.episode)
             viol_steps[c.id] = int(sum(tr.steps))
-        trace.write({"iter": -1, "summary": True, "executed": [s.to_json() for s in executed], "oracle": viol_flags, "success": success})
+        trace.write(
+            {
+                "iter": -1,
+                "summary": True,
+                "executed": [s.to_json() for s in executed],
+                "oracle": viol_flags,
+                "success": success,
+            }
+        )
         st = objective.stats()
         return {
             "run_id": rid,
@@ -289,6 +400,7 @@ class Runner:
             "hard_reject": cfg.hard_reject,
             "unjudged": cfg.unjudged,
             "start_filter": cfg.start_filter,
+            "plan_overrides": json.dumps(cfg.plan_overrides, sort_keys=True),
             "vocab": cfg.vocab,
             "probes": cfg.probes,
             "library": self.lib.version,
@@ -299,7 +411,9 @@ class Runner:
         }
 
 
-def executed_at_cadence(executed: list[GroundTruthState], action_block: int) -> list[GroundTruthState]:
+def executed_at_cadence(
+    executed: list[GroundTruthState], action_block: int
+) -> list[GroundTruthState]:
     """Subsample executed env states at the planner's cadence (indices 0, ab, 2ab, ...), always
     keeping the final state so a violation at the end of a short episode is not dropped."""
     idx = list(range(0, len(executed), action_block))

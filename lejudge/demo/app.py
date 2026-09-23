@@ -42,7 +42,13 @@ def _bars(res: PlanResult, title: str) -> Any:
     n = max(1, len(res.probs))
     fig, axes = plt.subplots(n, 1, figsize=(4.2, 1.6 * n), squeeze=False)
     for ax, (text, p) in zip(axes[:, 0], res.probs.items() or [("(no constraint)", [])]):
-        if p and len(p) == 5 and text in res.penalties and abs(sum(p) - 1) < 1e-6 and len(p) != len(res.facts):
+        if (
+            p
+            and len(p) == 5
+            and text in res.penalties
+            and abs(sum(p) - 1) < 1e-6
+            and len(p) != len(res.facts)
+        ):
             ax.bar(["not at all", "poorly", "partly", "mostly", "fully"], p, color="#7570b3")
             ax.set_ylabel("P(level)")
         else:
@@ -51,7 +57,11 @@ def _bars(res: PlanResult, title: str) -> Any:
             ax.axhline(0.7, ls="--", lw=0.6, color="#999")
             ax.set_ylabel("P(violation)")
         ax.set_ylim(0, 1)
-        ax.set_title(f"{text[:60]}  → penalty {res.penalties.get(text, 0):.2f}" + ("  [held]" if res.held else ""), fontsize=8)
+        ax.set_title(
+            f"{text[:60]}  → penalty {res.penalties.get(text, 0):.2f}"
+            + ("  [held]" if res.held else ""),
+            fontsize=8,
+        )
     fig.suptitle(title, fontsize=9)
     fig.tight_layout()
     return fig
@@ -61,7 +71,10 @@ def build_app(backend: DemoBackend | None = None) -> Any:
     import gradio as gr
 
     backend = backend or DemoBackend()
-    live_ok = bool(os.environ.get("TYPESAFE_API_KEY")) and os.environ.get("LEJUDGE_MODE", "offline") == "live"
+    live_ok = (
+        bool(os.environ.get("TYPESAFE_API_KEY"))
+        and os.environ.get("LEJUDGE_MODE", "offline") == "live"
+    )
 
     def run(seed: int, text: str, lam: float, tau: float, judge: str):
         path = backend.gallery_path(int(seed), text)
@@ -70,12 +83,24 @@ def build_app(backend: DemoBackend | None = None) -> Any:
             note = "preset (cached plan)"
         else:
             if judge == "jev" and not live_ok:
-                raise gr.Error("Live Jev planning needs TYPESAFE_API_KEY and LEJUDGE_MODE=live; presets are cached. Choose judge=oracle-on-probes for a live run without the API.")
-            stock, ours = backend.plan_pair(int(seed), text, lam, tau, mode=("jev" if judge == "jev" else "oracle"))
+                raise gr.Error(
+                    "Live Jev planning needs TYPESAFE_API_KEY and LEJUDGE_MODE=live; presets are cached. Choose judge=oracle-on-probes for a live run without the API."
+                )
+            stock, ours = backend.plan_pair(
+                int(seed), text, lam, tau, mode=("jev" if judge == "jev" else "oracle")
+            )
             note = f"live plan ({ours.plan_time_s:.1f}s)"
         call = {**ours.call, "plan_time_s": round(ours.plan_time_s, 2), "note": note}
         summary = f"stock: success={stock.success}, oracle violations={stock.oracle} | LeJudge: success={ours.success}, oracle violations={ours.oracle}"
-        return _video(stock.frames), _video(ours.frames), _bars(stock, "stock LeWM plan (judged for display only)"), _bars(ours, "LeJudge plan"), ours.state_json, json.dumps(call, indent=1), summary
+        return (
+            _video(stock.frames),
+            _video(ours.frames),
+            _bars(stock, "stock LeWM plan (judged for display only)"),
+            _bars(ours, "LeJudge plan"),
+            ours.state_json,
+            json.dumps(call, indent=1),
+            summary,
+        )
 
     def paraphrases(seed: int, a: str, b: str, c: str, judge: str):
         outs = []
@@ -85,17 +110,31 @@ def build_app(backend: DemoBackend | None = None) -> Any:
             if judge == "jev" and not live_ok:
                 raise gr.Error("Needs live Jev.")
             _, ours = backend.plan_pair(int(seed), t, mode=("jev" if judge == "jev" else "oracle"))
-            outs.append({"text": t, "penalties": ours.penalties, "oracle": ours.oracle, "success": ours.success})
+            outs.append(
+                {
+                    "text": t,
+                    "penalties": ours.penalties,
+                    "oracle": ours.oracle,
+                    "success": ours.success,
+                }
+            )
         return json.dumps(outs, indent=1)
 
     with gr.Blocks(title="LeJudge — a cost module you program in English") as demo:
-        gr.Markdown("# LeJudge — a cost module you program in English\nPushT · LeWorldModel · Jev. Type a constraint; the plan changes.")
+        gr.Markdown(
+            "# LeJudge — a cost module you program in English\nPushT · LeWorldModel · Jev. Type a constraint; the plan changes."
+        )
         with gr.Row():
             seed = gr.Dropdown(choices=list(range(20)), value=0, label="initial-state seed")
             judge = gr.Radio(choices=["jev", "oracle-on-probes"], value="jev", label="judge")
         with gr.Row():
             with gr.Column(scale=1):
-                text = gr.Textbox(lines=3, max_lines=3, value=PRESETS[0], label="constraints (one per line, ≤ 3 lines, ≤ 200 chars each)")
+                text = gr.Textbox(
+                    lines=3,
+                    max_lines=3,
+                    value=PRESETS[0],
+                    label="constraints (one per line, ≤ 3 lines, ≤ 200 chars each)",
+                )
                 gr.Examples([[p] for p in PRESETS], inputs=[text], label="presets")
                 lam = gr.Slider(0.0, 4.0, value=1.0, step=0.25, label="λ (penalty weight)")
                 tau = gr.Slider(0.0, 1.0, value=0.5, step=0.05, label="τ (confidence gate)")
@@ -110,7 +149,9 @@ def build_app(backend: DemoBackend | None = None) -> Any:
                 p2 = gr.Plot(label="LeJudge plan: per-step P(violation)")
         with gr.Tabs():
             with gr.Tab("State sent to Jev"):
-                state_box = gr.Code(language="json", label="constraints and candidates are separate fields")
+                state_box = gr.Code(
+                    language="json", label="constraints and candidates are separate fields"
+                )
             with gr.Tab("Call"):
                 call_box = gr.Code(language="json")
             with gr.Tab("Try to break it"):
@@ -122,7 +163,9 @@ def build_app(backend: DemoBackend | None = None) -> Any:
                 pb.click(paraphrases, [seed, a, b, c, judge], [agree])
             with gr.Tab("About"):
                 gr.Markdown(ABOUT)
-        btn.click(run, [seed, text, lam, tau, judge], [v1, v2, p1, p2, state_box, call_box, summary])
+        btn.click(
+            run, [seed, text, lam, tau, judge], [v1, v2, p1, p2, state_box, call_box, summary]
+        )
     return demo
 
 

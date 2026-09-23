@@ -1,6 +1,6 @@
 # RFC-0006 — Evaluation harness, statistics and report
 
-**Status** Draft · **Scope** MVP · **Depends on** RFC-0003, RFC-0004
+**Status** Implemented · **Scope** MVP · **Depends on** RFC-0003, RFC-0004
 
 ## Summary
 

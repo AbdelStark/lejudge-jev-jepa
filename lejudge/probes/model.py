@@ -21,7 +21,18 @@ def targets_from_state(state: np.ndarray, contact: np.ndarray, arena: float = 51
     """``[N, 7]`` regression/classification targets from the env state and contact flags."""
     s = np.asarray(state, dtype=np.float64)
     ang = s[:, 4]
-    return np.stack([s[:, 0] / arena, s[:, 1] / arena, s[:, 2] / arena, s[:, 3] / arena, np.sin(ang), np.cos(ang), np.asarray(contact, dtype=np.float64)], 1)
+    return np.stack(
+        [
+            s[:, 0] / arena,
+            s[:, 1] / arena,
+            s[:, 2] / arena,
+            s[:, 3] / arena,
+            np.sin(ang),
+            np.cos(ang),
+            np.asarray(contact, dtype=np.float64),
+        ],
+        1,
+    )
 
 
 class _ProbeBase(nn.Module):
@@ -46,16 +57,33 @@ class _ProbeBase(nn.Module):
     @torch.inference_mode()
     def symbolic(self, z: torch.Tensor | np.ndarray) -> SymbolicState:
         """Batched: any leading dims, last dim 192 → SymbolicState with the same leading dims."""
-        out = self.forward(torch.as_tensor(np.asarray(z) if not torch.is_tensor(z) else z)).float().cpu().numpy()
+        out = (
+            self.forward(torch.as_tensor(np.asarray(z) if not torch.is_tensor(z) else z))
+            .float()
+            .cpu()
+            .numpy()
+        )
         angle = np.arctan2(out[..., 4], out[..., 5])
-        return SymbolicState(agent_xy=np.clip(out[..., 0:2], 0, 1), block_xy=np.clip(out[..., 2:4], 0, 1), block_angle=angle, contact_logit=out[..., 6])
+        return SymbolicState(
+            agent_xy=np.clip(out[..., 0:2], 0, 1),
+            block_xy=np.clip(out[..., 2:4], 0, 1),
+            block_angle=angle,
+            contact_logit=out[..., 6],
+        )
 
     __call__ = forward  # type: ignore[assignment]
 
     def save(self, out_dir: Path | str, meta: dict[str, Any]) -> Path:
         out_dir = Path(out_dir)
         out_dir.mkdir(parents=True, exist_ok=True)
-        torch.save({"kind": self.kind, "state_dict": self.state_dict(), "hparams": getattr(self, "hparams", {})}, out_dir / "weights.pt")
+        torch.save(
+            {
+                "kind": self.kind,
+                "state_dict": self.state_dict(),
+                "hparams": getattr(self, "hparams", {}),
+            },
+            out_dir / "weights.pt",
+        )
         (out_dir / "meta.json").write_text(json.dumps(meta, indent=2, sort_keys=True))
         return out_dir
 
@@ -71,7 +99,15 @@ class LinearProbe(_ProbeBase):
     def raw(self, z: torch.Tensor) -> torch.Tensor:
         return self.lin(self._norm(z))
 
-    def fit(self, x: np.ndarray, y: np.ndarray, ridge: float = 1.0, x_val: np.ndarray | None = None, y_val: np.ndarray | None = None, ridge_grid: tuple[float, ...] = (0.01, 0.1, 1.0, 10.0, 100.0)) -> dict[str, Any]:
+    def fit(
+        self,
+        x: np.ndarray,
+        y: np.ndarray,
+        ridge: float = 1.0,
+        x_val: np.ndarray | None = None,
+        y_val: np.ndarray | None = None,
+        ridge_grid: tuple[float, ...] = (0.01, 0.1, 1.0, 10.0, 100.0),
+    ) -> dict[str, Any]:
         """Closed-form ridge for the 6 regression targets; logistic regression for contact.
         ``ridge`` is chosen on the validation split when one is provided."""
         from sklearn.linear_model import LogisticRegression
@@ -86,7 +122,10 @@ class LinearProbe(_ProbeBase):
         for lam in grid:
             w, b = _ridge(xn, y[:, :6], lam)
             if x_val is not None:
-                pred = (torch.tensor((x_val - mu) / sd, dtype=torch.float64) @ torch.tensor(w) + torch.tensor(b)).numpy()
+                pred = (
+                    torch.tensor((x_val - mu) / sd, dtype=torch.float64) @ torch.tensor(w)
+                    + torch.tensor(b)
+                ).numpy()
                 err = float(np.mean((pred - y_val[:, :6]) ** 2))
             else:
                 err = 0.0
@@ -124,15 +163,35 @@ def _ridge(x: np.ndarray, y: np.ndarray, lam: float) -> tuple[np.ndarray, np.nda
 class MLPProbe(_ProbeBase):
     kind = "mlp"
 
-    def __init__(self, in_dim: int = 192, hidden: int = 256, out_dim: int = 7, dropout: float = 0.1) -> None:
+    def __init__(
+        self, in_dim: int = 192, hidden: int = 256, out_dim: int = 7, dropout: float = 0.1
+    ) -> None:
         super().__init__()
-        self.net = nn.Sequential(nn.Linear(in_dim, hidden), nn.GELU(), nn.Dropout(dropout), nn.Linear(hidden, hidden), nn.GELU(), nn.Dropout(dropout), nn.Linear(hidden, out_dim))
+        self.net = nn.Sequential(
+            nn.Linear(in_dim, hidden),
+            nn.GELU(),
+            nn.Dropout(dropout),
+            nn.Linear(hidden, hidden),
+            nn.GELU(),
+            nn.Dropout(dropout),
+            nn.Linear(hidden, out_dim),
+        )
         self.hparams: dict[str, Any] = {"hidden": hidden, "dropout": dropout}
 
     def raw(self, z: torch.Tensor) -> torch.Tensor:
         return self.net(self._norm(z))
 
-    def fit(self, x: np.ndarray, y: np.ndarray, x_val: np.ndarray | None = None, y_val: np.ndarray | None = None, epochs: int = 60, lr: float = 1e-3, batch: int = 512, seed: int = 0) -> dict[str, Any]:
+    def fit(
+        self,
+        x: np.ndarray,
+        y: np.ndarray,
+        x_val: np.ndarray | None = None,
+        y_val: np.ndarray | None = None,
+        epochs: int = 60,
+        lr: float = 1e-3,
+        batch: int = 512,
+        seed: int = 0,
+    ) -> dict[str, Any]:
         torch.manual_seed(seed)
         x = np.asarray(x, dtype=np.float32)
         mu, sd = x.mean(0), x.std(0) + 1e-6
@@ -148,7 +207,9 @@ class MLPProbe(_ProbeBase):
             for i in range(0, n, batch):
                 idx = perm[i : i + batch]
                 out = self.net(self._norm(xt[idx]))
-                loss = nn.functional.mse_loss(out[:, :6], yt[idx, :6]) + nn.functional.binary_cross_entropy_with_logits(out[:, 6], yt[idx, 6])
+                loss = nn.functional.mse_loss(
+                    out[:, :6], yt[idx, :6]
+                ) + nn.functional.binary_cross_entropy_with_logits(out[:, 6], yt[idx, 6])
                 opt.zero_grad()
                 loss.backward()
                 opt.step()
@@ -156,7 +217,11 @@ class MLPProbe(_ProbeBase):
             if x_val is not None:
                 with torch.no_grad():
                     pv = self.net(self._norm(torch.tensor(np.asarray(x_val, dtype=np.float32))))
-                    v = float(nn.functional.mse_loss(pv[:, :6], torch.tensor(np.asarray(y_val[:, :6], dtype=np.float32))))
+                    v = float(
+                        nn.functional.mse_loss(
+                            pv[:, :6], torch.tensor(np.asarray(y_val[:, :6], dtype=np.float32))
+                        )
+                    )
                 if v < best_val:
                     best_val, best_state = v, {k: t.clone() for k, t in self.state_dict().items()}
         if best_state is not None:
@@ -166,10 +231,18 @@ class MLPProbe(_ProbeBase):
         return self.hparams
 
 
-def load_probe(name: str = "pusht/linear@1", root: Path | str = PROBE_ROOT, device: str | torch.device = "cpu") -> _ProbeBase:
+def load_probe(
+    name: str = "pusht/linear@1", root: Path | str = PROBE_ROOT, device: str | torch.device = "cpu"
+) -> _ProbeBase:
     d = Path(name) if Path(name).exists() else Path(root) / name
     payload = torch.load(d / "weights.pt", map_location="cpu", weights_only=False)
-    probe: _ProbeBase = LinearProbe() if payload["kind"] == "linear" else MLPProbe(**{k: v for k, v in payload.get("hparams", {}).items() if k in ("hidden", "dropout")})
+    probe: _ProbeBase = (
+        LinearProbe()
+        if payload["kind"] == "linear"
+        else MLPProbe(
+            **{k: v for k, v in payload.get("hparams", {}).items() if k in ("hidden", "dropout")}
+        )
+    )
     probe.load_state_dict(payload["state_dict"])
     probe.eval()
     probe.hparams = payload.get("hparams", {})

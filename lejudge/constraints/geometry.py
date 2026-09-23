@@ -110,7 +110,9 @@ def _point_in_convex_quad(p: np.ndarray, quad: np.ndarray) -> np.ndarray:
     inside = np.ones(p.shape[:-1], dtype=bool)
     for i in range(4):
         a, b = quad[..., i, :], quad[..., (i + 1) % 4, :]
-        cross = (b[..., 0] - a[..., 0]) * (p[..., 1] - a[..., 1]) - (b[..., 1] - a[..., 1]) * (p[..., 0] - a[..., 0])
+        cross = (b[..., 0] - a[..., 0]) * (p[..., 1] - a[..., 1]) - (b[..., 1] - a[..., 1]) * (
+            p[..., 0] - a[..., 0]
+        )
         s = cross >= 0
         if sign is None:
             sign = s
@@ -118,19 +120,30 @@ def _point_in_convex_quad(p: np.ndarray, quad: np.ndarray) -> np.ndarray:
     return inside
 
 
-def agent_block_distance(agent_xy: np.ndarray, block_xy: np.ndarray, angle: np.ndarray, scale: float) -> np.ndarray:
+def agent_block_distance(
+    agent_xy: np.ndarray, block_xy: np.ndarray, angle: np.ndarray, scale: float
+) -> np.ndarray:
     """Signed distance from the agent centre to the T (negative inside). ``[...]``."""
     verts = tee_vertices(block_xy, angle, scale)  # [..., 8, 2]
     p = np.asarray(agent_xy, dtype=np.float64)
     d = np.full(p.shape[:-1], np.inf)
     for quad in (verts[..., 0:4, :], verts[..., 4:8, :]):
         for i in range(4):
-            d = np.minimum(d, point_to_segment_distance(p, quad[..., i, :], quad[..., (i + 1) % 4, :]))
+            d = np.minimum(
+                d, point_to_segment_distance(p, quad[..., i, :], quad[..., (i + 1) % 4, :])
+            )
         inside = _point_in_convex_quad(p, quad)
         d = np.where(inside, -np.abs(d), d)
     return d
 
 
-def contact_from_geometry(agent_xy: np.ndarray, block_xy: np.ndarray, angle: np.ndarray, scale: float, agent_radius: float, tolerance: float) -> np.ndarray:
+def contact_from_geometry(
+    agent_xy: np.ndarray,
+    block_xy: np.ndarray,
+    angle: np.ndarray,
+    scale: float,
+    agent_radius: float,
+    tolerance: float,
+) -> np.ndarray:
     """True when the agent disc is within ``tolerance`` of the T polygon (all in normalised units)."""
     return agent_block_distance(agent_xy, block_xy, angle, scale) <= agent_radius + tolerance

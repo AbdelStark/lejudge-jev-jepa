@@ -39,7 +39,16 @@ def _gt(state: np.ndarray, contact: np.ndarray) -> list[GroundTruthState]:
     return [GroundTruthState.from_env(state[i], contact[i]) for i in range(len(state))]
 
 
-def executed_items(data: EpisodeData, probe: Any, vocab: Vocab, lib: Library, n: int, seed: int, horizon: int = 5, action_block: int = 5) -> list[Item]:
+def executed_items(
+    data: EpisodeData,
+    probe: Any,
+    vocab: Vocab,
+    lib: Library,
+    n: int,
+    seed: int,
+    horizon: int = 5,
+    action_block: int = 5,
+) -> list[Item]:
     rng = np.random.default_rng(seed)
     eps = data.split(seed=0)["test"]
     items: list[Item] = []
@@ -58,13 +67,28 @@ def executed_items(data: EpisodeData, probe: Any, vocab: Vocab, lib: Library, n:
         probe_words = words(sym, vocab)
         base = f"ex_{e}_{t0}"
         items.append(Item(base + "_gt", "executed", "gt-words", gt_words, gt, labels, label_steps))
-        items.append(Item(base + "_pr", "executed", "probe-words", probe_words, gt, labels, label_steps))
+        items.append(
+            Item(base + "_pr", "executed", "probe-words", probe_words, gt, labels, label_steps)
+        )
         i += 1
     return items
 
 
 @torch.inference_mode()
-def imagined_items(data: EpisodeData, model: Any, probe: Any, vocab: Vocab, lib: Library, n: int, seed: int, horizon: int = 5, action_block: int = 5, num_samples: int = 300, k: int = 16, goal_offset: int = 25) -> list[Item]:
+def imagined_items(
+    data: EpisodeData,
+    model: Any,
+    probe: Any,
+    vocab: Vocab,
+    lib: Library,
+    n: int,
+    seed: int,
+    horizon: int = 5,
+    action_block: int = 5,
+    num_samples: int = 300,
+    k: int = 16,
+    goal_offset: int = 25,
+) -> list[Item]:
     """CEM-style candidates: sample action sequences from the standard-normal prior, roll the
     predictor, keep the ``k`` cheapest by goal distance, describe with probes. Labels are
     oracle-on-probes (flagged by ``description='probe-words'`` and ``source='imagined'``)."""
@@ -81,7 +105,13 @@ def imagined_items(data: EpisodeData, model: Any, probe: Any, vocab: Vocab, lib:
         emb0 = torch.tensor(ep["emb"][t0], device=device).view(1, 1, 1, -1)
         goal = torch.tensor(ep["emb"][t0 + goal_offset], device=device).view(1, 1, -1)
         acts = torch.randn(1, num_samples, horizon, 2 * action_block, generator=gen).to(device)
-        info = model.rollout({"emb": emb0.expand(1, num_samples, 1, -1), "pixels": torch.zeros(1, num_samples, 1, 1, device=device)}, acts)
+        info = model.rollout(
+            {
+                "emb": emb0.expand(1, num_samples, 1, -1),
+                "pixels": torch.zeros(1, num_samples, 1, 1, device=device),
+            },
+            acts,
+        )
         pred = info["predicted_emb"][0]  # (S, H+1, D)
         A = ((pred[:, -1] - goal[0]) ** 2).sum(-1)
         idx = torch.topk(A, k=k, largest=False).indices
@@ -90,7 +120,17 @@ def imagined_items(data: EpisodeData, model: Any, probe: Any, vocab: Vocab, lib:
             st = sym[j].to_ground_truth()
             labels = {c.id: check(c, st, vocab).episode for c in lib.constraints}
             label_steps = {c.id: list(check(c, st, vocab).steps) for c in lib.constraints}
-            items.append(Item(f"im_{e}_{t0}_{j}", "imagined", "probe-words", words(sym[j], vocab), st, labels, label_steps))
+            items.append(
+                Item(
+                    f"im_{e}_{t0}_{j}",
+                    "imagined",
+                    "probe-words",
+                    words(sym[j], vocab),
+                    st,
+                    labels,
+                    label_steps,
+                )
+            )
             if len(items) >= n:
                 break
     return items
@@ -100,7 +140,18 @@ def _score(family: str, p: list[float]) -> float:
     return penalty(family, p)
 
 
-def run_judges(items: list[Item], judges: dict[str, Any], lib: Library, vocab: Vocab, variants: tuple[str, ...] = TEXT_VARIANTS, batch: int = 16, constraints_per_call: int = 4, repeats: int = 1, repeat_items: int = 0, progress: bool = True) -> pd.DataFrame:
+def run_judges(
+    items: list[Item],
+    judges: dict[str, Any],
+    lib: Library,
+    vocab: Vocab,
+    variants: tuple[str, ...] = TEXT_VARIANTS,
+    batch: int = 16,
+    constraints_per_call: int = 4,
+    repeats: int = 1,
+    repeat_items: int = 0,
+    progress: bool = True,
+) -> pd.DataFrame:
     """Every judge sees identical states and keys. Returns one row per (item, judge, constraint, variant, repeat)."""
     rows: list[dict[str, Any]] = []
     cids = lib.ids()
@@ -111,18 +162,27 @@ def run_judges(items: list[Item], judges: dict[str, Any], lib: Library, vocab: V
         facts = {it.item_id: it.facts for it in chunk}
         states = {it.item_id: it.states for it in chunk}
         for variant in variants:
-            groups = [cids[i : i + constraints_per_call] for i in range(0, len(cids), constraints_per_call)]
+            groups = [
+                cids[i : i + constraints_per_call]
+                for i in range(0, len(cids), constraints_per_call)
+            ]
             for group in groups:
                 cs: list[Constraint] = [lib.variants(cid)[variant] for cid in group]
                 for jname, judge in judges.items():
-                    n_rep = repeats if (variant == "canonical" and repeat_items and bi * batch < repeat_items) else 1
+                    n_rep = (
+                        repeats
+                        if (variant == "canonical" and repeat_items and bi * batch < repeat_items)
+                        else 1
+                    )
                     for rep in range(n_rep):
                         if rep > 0 and hasattr(judge, "uid"):
                             judge.uid = f"rep{rep}"
                         res = judge.judge(facts, cs, states=states)
                         if hasattr(judge, "uid"):
                             judge.uid = ""
-                        per_q = len(chunk) * sum(1 if c.family == "soft" else len(chunk[0].facts) for c in cs)
+                        per_q = len(chunk) * sum(
+                            1 if c.family == "soft" else len(chunk[0].facts) for c in cs
+                        )
                         for it in chunk:
                             for c, cid in zip(cs, group):
                                 p = res.p[it.item_id][c.id]
@@ -139,15 +199,28 @@ def run_judges(items: list[Item], judges: dict[str, Any], lib: Library, vocab: V
                                         "text": c.text,
                                         "repeat": rep,
                                         "score": _score(fam, p),
-                                        "p": json.dumps([None if (isinstance(x, float) and math.isnan(x)) else x for x in p]),
+                                        "p": json.dumps(
+                                            [
+                                                None
+                                                if (isinstance(x, float) and math.isnan(x))
+                                                else x
+                                                for x in p
+                                            ]
+                                        ),
                                         "confidence": res.confidence[it.item_id][c.id],
                                         "label": bool(it.labels[cid]),
                                         "label_steps": json.dumps(it.label_steps[cid]),
                                         "failed": bool(res.failed),
                                         "cache_hit": bool(res.cache_hit),
-                                        "latency_ms_per_q": (res.latency_ms / per_q) if per_q else 0.0,
-                                        "tokens_in_per_q": (res.input_tokens / per_q) if per_q else 0.0,
-                                        "tokens_out_per_q": (res.output_tokens / per_q) if per_q else 0.0,
+                                        "latency_ms_per_q": (res.latency_ms / per_q)
+                                        if per_q
+                                        else 0.0,
+                                        "tokens_in_per_q": (res.input_tokens / per_q)
+                                        if per_q
+                                        else 0.0,
+                                        "tokens_out_per_q": (res.output_tokens / per_q)
+                                        if per_q
+                                        else 0.0,
                                         "response_model": res.response_model,
                                         "bank": BANK_VERSION,
                                         "library": lib.version,
@@ -155,11 +228,22 @@ def run_judges(items: list[Item], judges: dict[str, Any], lib: Library, vocab: V
                                     }
                                 )
         if progress:
-            print(f"[judge-study] batch {bi + 1}/{n_batches} rows={len(rows)} ({time.time() - t_start:.0f}s)", flush=True)
+            print(
+                f"[judge-study] batch {bi + 1}/{n_batches} rows={len(rows)} ({time.time() - t_start:.0f}s)",
+                flush=True,
+            )
     return pd.DataFrame(rows)
 
 
-def build_items(n_executed: int, n_imagined: int, seed: int = 0, data_path: str = "artifacts/data/pusht_expert.npz", probes: str = "pusht/linear@1", vocab_name: str = "pusht@1", device: str | None = None) -> list[Item]:
+def build_items(
+    n_executed: int,
+    n_imagined: int,
+    seed: int = 0,
+    data_path: str = "artifacts/data/pusht_expert.npz",
+    probes: str = "pusht/linear@1",
+    vocab_name: str = "pusht@1",
+    device: str | None = None,
+) -> list[Item]:
     data = EpisodeData(data_path)
     probe = load_probe(probes)
     vocab = load_vocab(vocab_name)
@@ -171,7 +255,9 @@ def build_items(n_executed: int, n_imagined: int, seed: int = 0, data_path: str 
     return items
 
 
-def make_judges(names: list[str], vocab: Vocab, llm_model: str = "qwen2.5:7b-instruct") -> dict[str, Any]:
+def make_judges(
+    names: list[str], vocab: Vocab, llm_model: str = "qwen2.5:7b-instruct"
+) -> dict[str, Any]:
     out: dict[str, Any] = {}
     for n in names:
         if n == "jev":
@@ -197,15 +283,29 @@ def metrics_table(df: pd.DataFrame) -> pd.DataFrame:
         canon = g[g.variant == "canonical"]
         paras = g[g.variant.str.startswith("p")]
         negs = g[g.variant.str.startswith("n")]
-        r: dict[str, Any] = {"judge": judge, "source": source, "description": description, "n_items": canon.item_id.nunique()}
+        r: dict[str, Any] = {
+            "judge": judge,
+            "source": source,
+            "description": description,
+            "n_items": canon.item_id.nunique(),
+        }
         for name, sub in (("canonical", canon), ("paraphrase", paras)):
             m = prf(sub.label.to_numpy(), sub.score.to_numpy())
-            r[f"{name}_precision"], r[f"{name}_recall"], r[f"{name}_f1"], r[f"{name}_accuracy"] = m["precision"], m["recall"], m["f1"], m["accuracy"]
+            r[f"{name}_precision"], r[f"{name}_recall"], r[f"{name}_f1"], r[f"{name}_accuracy"] = (
+                m["precision"],
+                m["recall"],
+                m["f1"],
+                m["accuracy"],
+            )
             r[f"{name}_auroc"] = auroc(sub.label.to_numpy(), sub.score.to_numpy())
             r[f"{name}_ece"] = ece(sub.label.to_numpy(), sub.score.to_numpy())[0]
         trap = negs[negs.label]  # canonical condition present; negative sentence must not fire
         # the oracle judge ignores the wording (it runs the canonical checker), so its FPR is undefined
-        r["negative_fpr"] = float("nan") if str(judge).startswith("oracle") else (float((trap.score > 0.5).mean()) if len(trap) else float("nan"))
+        r["negative_fpr"] = (
+            float("nan")
+            if str(judge).startswith("oracle")
+            else (float((trap.score > 0.5).mean()) if len(trap) else float("nan"))
+        )
         r["latency_ms_per_1000"] = float(g.latency_ms_per_q.mean() * 1000)
         r["tokens_in_per_1000"] = float(g.tokens_in_per_q.mean() * 1000)
         r["failed_rate"] = float(g.failed.mean())
@@ -218,9 +318,24 @@ def per_constraint_table(df: pd.DataFrame) -> pd.DataFrame:
 
     rows = []
     base = df[(df.repeat == 0)]
-    for (judge, description, cid, variant), g in base.groupby(["judge", "description", "constraint", "variant"]):
+    for (judge, description, cid, variant), g in base.groupby(
+        ["judge", "description", "constraint", "variant"]
+    ):
         m = prf(g.label.to_numpy(), g.score.to_numpy())
-        rows.append({"judge": judge, "description": description, "constraint": cid, "variant": variant, "accuracy": m["accuracy"], "f1": m["f1"], "recall": m["recall"], "precision": m["precision"], "n": m["n"], "positives": int(g.label.sum())})
+        rows.append(
+            {
+                "judge": judge,
+                "description": description,
+                "constraint": cid,
+                "variant": variant,
+                "accuracy": m["accuracy"],
+                "f1": m["f1"],
+                "recall": m["recall"],
+                "precision": m["precision"],
+                "n": m["n"],
+                "positives": int(g.label.sum()),
+            }
+        )
     return pd.DataFrame(rows)
 
 
@@ -232,7 +347,15 @@ def consistency_table(df: pd.DataFrame) -> pd.DataFrame:
         if multi.empty:
             continue
         sd = multi.groupby(["item_id", "constraint"]).score.std(ddof=0)
-        rows.append({"judge": judge, "n_pairs": int(len(sd)), "repeats": int(multi.repeat.nunique()), "score_std_mean": float(sd.mean()), "score_std_max": float(sd.max())})
+        rows.append(
+            {
+                "judge": judge,
+                "n_pairs": int(len(sd)),
+                "repeats": int(multi.repeat.nunique()),
+                "score_std_mean": float(sd.mean()),
+                "score_std_max": float(sd.max()),
+            }
+        )
     return pd.DataFrame(rows)
 
 

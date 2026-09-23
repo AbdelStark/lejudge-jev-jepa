@@ -11,6 +11,12 @@ from lejudge.types import Constraint, GroundTruthState, JudgeResult, StepFacts
 
 
 class Judge(Protocol):
+    """Every judge receives identical inputs and returns probabilities keyed by the caller's ids.
+
+    A judge may set ``local = True`` when it is free and deterministic (oracle, keyword); the cost
+    module then judges every candidate's full sequence directly instead of memoising step facts.
+    """
+
     name: str
 
     def judge(
@@ -31,17 +37,34 @@ def plan_questions(built: BuiltState, constraints: list[Constraint]) -> list[Que
     return specs
 
 
-def empty_result(facts: dict[str, list[StepFacts]], constraints: list[Constraint], name: str, failed: bool = True) -> JudgeResult:
+def empty_result(
+    facts: dict[str, list[StepFacts]], constraints: list[Constraint], name: str, failed: bool = True
+) -> JudgeResult:
     p: dict[str, dict[str, list[float]]] = {}
     conf: dict[str, dict[str, float | None]] = {}
     for k, seq in facts.items():
         p[k] = {}
         conf[k] = {}
         for c in constraints:
-            n = 5 if c.family == "soft" else (2 * len(seq) if c.family == "temporal_before" else len(seq))
+            n = (
+                5
+                if c.family == "soft"
+                else (2 * len(seq) if c.family == "temporal_before" else len(seq))
+            )
             p[k][c.id] = [math.nan] * n
             conf[k][c.id] = None
-    return JudgeResult(p=p, confidence=conf, latency_ms=0.0, input_tokens=0, output_tokens=0, response_model="", cache_hit=False, n_calls=0, judge_name=name, failed=failed)
+    return JudgeResult(
+        p=p,
+        confidence=conf,
+        latency_ms=0.0,
+        input_tokens=0,
+        output_tokens=0,
+        response_model="",
+        cache_hit=False,
+        n_calls=0,
+        judge_name=name,
+        failed=failed,
+    )
 
 
 def assemble(
@@ -65,8 +88,12 @@ def assemble(
     """
     inv_k, inv_c = built.inv_k(), built.inv_c()
     fam = {c.id: c.family for c in constraints}
-    p: dict[str, dict[str, list[float]]] = {inv_k[k]: {c.id: [] for c in constraints} for k in built.state["candidates"]}
-    conf: dict[str, dict[str, float | None]] = {inv_k[k]: {c.id: None for c in constraints} for k in built.state["candidates"]}
+    p: dict[str, dict[str, list[float]]] = {
+        inv_k[k]: {c.id: [] for c in constraints} for k in built.state["candidates"]
+    }
+    conf: dict[str, dict[str, float | None]] = {
+        inv_k[k]: {c.id: None for c in constraints} for k in built.state["candidates"]
+    }
     missing = 0
     # group specs by (k, c) preserving order (steps ascending; A before B for temporal)
     for spec in specs:

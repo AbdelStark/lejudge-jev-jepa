@@ -11,7 +11,9 @@ BOOT_N = 10_000
 BOOT_SEED = 0
 
 
-def bootstrap_ci(x: np.ndarray, n: int = BOOT_N, seed: int = BOOT_SEED, stat=np.mean) -> tuple[float, float, float]:
+def bootstrap_ci(
+    x: np.ndarray, n: int = BOOT_N, seed: int = BOOT_SEED, stat=np.mean
+) -> tuple[float, float, float]:
     """(point, lo, hi) 95 % percentile bootstrap of ``stat`` over rows of ``x``."""
     x = np.asarray(x, dtype=np.float64)
     x = x[~np.isnan(x)]
@@ -23,7 +25,9 @@ def bootstrap_ci(x: np.ndarray, n: int = BOOT_N, seed: int = BOOT_SEED, stat=np.
     return float(stat(x)), float(np.percentile(boots, 2.5)), float(np.percentile(boots, 97.5))
 
 
-def risk_difference(a: np.ndarray, b: np.ndarray, n: int = BOOT_N, seed: int = BOOT_SEED) -> tuple[float, float, float]:
+def risk_difference(
+    a: np.ndarray, b: np.ndarray, n: int = BOOT_N, seed: int = BOOT_SEED
+) -> tuple[float, float, float]:
     """Paired risk difference mean(a) − mean(b) with a paired bootstrap CI."""
     a, b = np.asarray(a, dtype=np.float64), np.asarray(b, dtype=np.float64)
     assert a.shape == b.shape
@@ -69,8 +73,18 @@ def prf(y: np.ndarray, s: np.ndarray, thr: float = 0.5) -> dict[str, float]:
     p = tp / (tp + fp) if tp + fp else float("nan")
     r = tp / (tp + fn) if tp + fn else float("nan")
     f1 = 2 * p * r / (p + r) if (p + r) and not np.isnan(p) and not np.isnan(r) else float("nan")
-    acc = (tp + tn) / max(1, len(y))
-    return {"precision": p, "recall": r, "f1": f1, "accuracy": acc, "tp": tp, "fp": fp, "fn": fn, "tn": tn, "n": int(len(y))}
+    acc = (tp + tn) / len(y) if len(y) else float("nan")
+    return {
+        "precision": p,
+        "recall": r,
+        "f1": f1,
+        "accuracy": acc,
+        "tp": tp,
+        "fp": fp,
+        "fn": fn,
+        "tn": tn,
+        "n": int(len(y)),
+    }
 
 
 def auroc(y: np.ndarray, s: np.ndarray) -> float:
