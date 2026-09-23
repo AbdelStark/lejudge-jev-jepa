@@ -106,7 +106,8 @@ def ece(y: np.ndarray, s: np.ndarray, bins: int = 10) -> tuple[float, list[dict[
     y, s = y[ok], s[ok]
     if len(s) == 0:
         return float("nan"), []
-    order = np.argsort(s)
+    # Keep equal-score rows in their recorded order across NumPy implementations.
+    order = np.argsort(s, kind="stable")
     chunks = np.array_split(order, bins)
     total = 0.0
     table = []

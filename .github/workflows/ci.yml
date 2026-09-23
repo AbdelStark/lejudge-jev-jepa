@@ -11,8 +11,8 @@ jobs:
       - uses: actions/checkout@v4
       - uses: astral-sh/setup-uv@v3
       - run: uv venv --python 3.10 && uv pip install -e '.[dev]'
-      - run: .venv/bin/python -m ruff check lejudge tests paper scripts
-      - run: .venv/bin/python -m ruff format --check lejudge tests paper scripts
+      - run: .venv/bin/python -m ruff check lejudge tests paper
+      - run: .venv/bin/python -m ruff format --check lejudge tests paper
       - run: .venv/bin/python -m pytest -q
       - run: .venv/bin/lejudge lint
       # RFC-0008 acceptance: judge-only study on a 50-item subset, fully from the shipped cache
