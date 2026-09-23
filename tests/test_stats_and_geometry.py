@@ -86,6 +86,12 @@ def test_classification_metrics():
     assert np.isnan(auroc(np.zeros(3), s[:3]))
 
 
+def test_ece_preserves_recorded_order_for_tied_scores():
+    e, table = ece(np.array([1, 1, 0, 0]), np.full(4, 0.5), bins=2)
+    assert e == pytest.approx(0.5)
+    assert [row["accuracy"] for row in table] == [1.0, 0.0]
+
+
 def test_planning_table_and_tests():
     from lejudge.eval.report import paired_tests, planning_table
 
