@@ -30,7 +30,7 @@ report:
 
 paper: report
 	$(PY) paper/fill.py
-	cd paper && (tectonic main.filled.tex >/dev/null 2>&1 || pdflatex -interaction=nonstopmode main.filled.tex >/dev/null) && echo "paper/main.filled.pdf"
+	cd paper && (tectonic main.filled.tex >/dev/null 2>&1 || pdflatex -interaction=nonstopmode main.filled.tex >/dev/null) && cp main.filled.pdf LeJudge-natural-language-constraints-for-latent-world-model-planning.pdf && echo "paper/LeJudge-natural-language-constraints-for-latent-world-model-planning.pdf"
 
 clean-figures:
 	rm -f paper/figures/*.pdf paper/figures/*.png paper/figures/*.csv paper/figures/*.md

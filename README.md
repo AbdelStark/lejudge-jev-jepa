@@ -9,7 +9,7 @@
 [![CI](https://github.com/AbdelStark/lejudge-jev-jepa/actions/workflows/ci.yml/badge.svg)](https://github.com/AbdelStark/lejudge-jev-jepa/actions/workflows/ci.yml)
 [![Python 3.10](https://img.shields.io/badge/python-3.10-blue.svg)](pyproject.toml)
 [![License: MIT](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
-[![Paper](https://img.shields.io/badge/paper-PDF-b31b1b.svg)](paper/main.filled.pdf)
+[![Paper](https://img.shields.io/badge/paper-PDF-b31b1b.svg)](paper/LeJudge-natural-language-constraints-for-latent-world-model-planning.pdf)
 [![Reproducible](https://img.shields.io/badge/make%20paper-offline%20from%20cache-success.svg)](Makefile)
 
 *Imagine → describe → judge → decide.*
@@ -89,7 +89,7 @@ Six of nine pre-registered hypotheses are met. The oracle's own 20-point target 
 
 ## Results
 
-The paper ([`paper/main.filled.pdf`](paper/main.filled.pdf)) is filled programmatically: [`paper/fill.py`](paper/fill.py) reads every number from `artifacts/results/*.parquet` and writes them to [`paper/values.json`](paper/values.json). The numbers in this README are copied from that file. 95 % CIs are percentile bootstraps with 10,000 resamples.
+The paper ([`paper/LeJudge-natural-language-constraints-for-latent-world-model-planning.pdf`](paper/LeJudge-natural-language-constraints-for-latent-world-model-planning.pdf)) is filled programmatically: [`paper/fill.py`](paper/fill.py) reads every number from `artifacts/results/*.parquet` and writes them to [`paper/values.json`](paper/values.json). The numbers in this README are copied from that file. 95 % CIs are percentile bootstraps with 10,000 resamples.
 
 ### Reproduction gate
 
@@ -185,7 +185,7 @@ uv pip install -e '.[llm,demo,dev]'       # pins stable-worldmodel to the git co
 export STABLEWM_HOME=~/.stable-wm SDL_VIDEODRIVER=dummy LEJUDGE_MODE=offline
 
 pytest -q && lejudge lint                 # unit tests + RFC-0003 question-bank lint
-make paper                                # figures, tables, placeholders, LaTeX → paper/main.filled.pdf
+make paper                                # figures, tables, placeholders, LaTeX → paper/LeJudge-natural-language-constraints-for-latent-world-model-planning.pdf
 ```
 
 `LEJUDGE_MODE=offline` raises on any cache miss, so the commands above make **zero** API calls, and re-running `make paper` on unchanged results leaves every figure byte-identical. To regenerate the studies from scratch (needs `TYPESAFE_API_KEY` and `LEJUDGE_MODE=live`):

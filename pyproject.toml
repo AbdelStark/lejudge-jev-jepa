@@ -29,7 +29,7 @@ dependencies = [
 
 [project.urls]
 Repository = "https://github.com/AbdelStark/lejudge-jev-jepa"
-Paper = "https://github.com/AbdelStark/lejudge-jev-jepa/blob/main/paper/main.filled.pdf"
+Paper = "https://github.com/AbdelStark/lejudge-jev-jepa/blob/main/paper/LeJudge-natural-language-constraints-for-latent-world-model-planning.pdf"
 
 [project.optional-dependencies]
 llm = ["openai"]

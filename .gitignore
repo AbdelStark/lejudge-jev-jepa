@@ -16,5 +16,7 @@ paper/*.aux
 paper/*.log
 paper/*.out
 paper/*.pdf
+!paper/main.filled.pdf
+!paper/LeJudge-natural-language-constraints-for-latent-world-model-planning.pdf
 paper/main.filled.tex
 eval_tmp_*.npy
