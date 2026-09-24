@@ -11,6 +11,7 @@
 [![License: MIT](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 [![Paper](https://img.shields.io/badge/paper-PDF-b31b1b.svg)](paper/LeJudge-natural-language-constraints-for-latent-world-model-planning.pdf)
 [![Reproducible](https://img.shields.io/badge/make%20paper-offline%20from%20cache-success.svg)](Makefile)
+[![Listed in Awesome Jev](https://abdelstark.github.io/awesome-typesafe-jev/assets/listed-badge.svg)](https://abdelstark.github.io/awesome-typesafe-jev/#community-projects)
 
 *Imagine → describe → judge → decide.*
 
